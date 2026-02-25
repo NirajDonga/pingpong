@@ -1,0 +1,46 @@
+.env
+
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build output
+/bin/
+/build/
+/dist/
+
+# Vendor directory
+/vendor/
+
+# IDE/editor directories
+.vscode/
+.idea/
+*.iml
+
+# Environment files
+.env.local
+.env.*.local
+.envrc
+
+# Logs
+*.log
+
+# Coverage
+coverage.out
+
+# Test cache and data
+testdata/
+
+# macOS
+.DS_Store
+
+# Swap files
+*.swp
+*.swo
+
+# Ignore Go module download cache (optional local files)
+GOMODCACHE/
