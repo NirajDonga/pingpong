@@ -34,7 +34,7 @@ func Measure(targetURL string) (shared.Metrics, error) {
 	if err == nil {
 		resp.Body.Close()
 	}
-	
+
 	m.TotalMs = int(time.Since(start).Milliseconds())
 	return m, err
 }

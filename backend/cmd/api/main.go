@@ -9,8 +9,7 @@ import (
 
 	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
-	
-	// Updated to match your exact go.mod path
+
 	"github.com/NirajDonga/pingpong/backend/internal/shared"
 )
 
@@ -32,7 +31,7 @@ func main() {
 
 	// 2. HTTP Server & SSE Endpoint
 	http.HandleFunc("/api/stream", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*") 
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
@@ -48,7 +47,7 @@ func main() {
 		// Broadcast Start Command
 		cmd, _ := json.Marshal(shared.PingCommand{
 			SessionID:       sessionID,
-			TargetURL:       "https://example.com", 
+			TargetURL:       "https://example.com",
 			DurationSeconds: 15,
 		})
 		nc.Publish("ping.start", cmd)
@@ -70,12 +69,12 @@ func main() {
 				flusher.Flush()
 				return
 			case <-r.Context().Done():
-				return 
+				return
 			}
 		}
 	})
 
-	log.Println("✅ API listening on :8080")
+	log.Println("API listening on :8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("HTTP server error: %v", err)
 	}
