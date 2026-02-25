@@ -10,16 +10,19 @@ import (
 	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
 
+	"github.com/NirajDonga/pingpong/backend/internal/config"
 	"github.com/NirajDonga/pingpong/backend/internal/shared"
 )
 
 func main() {
 	// 1. Start Embedded NATS
-	opts := &server.Options{Host: "127.0.0.1", Port: 4222}
+	natsHost := config.GetEnv("NATS_HOST", "127.0.0.1")
+	opts := &server.Options{Host: natsHost, Port: 4222}
 	ns, err := server.NewServer(opts)
 	if err != nil {
 		log.Fatalf("Error creating NATS server: %v", err)
 	}
+
 	go ns.Start()
 	ns.ReadyForConnections(5 * time.Second)
 
@@ -44,10 +47,12 @@ func main() {
 
 		sessionID := fmt.Sprintf("req_%d", time.Now().UnixMilli())
 
+		target := config.GetEnv("DEFAULT_TARGET", "https://example.com")
+
 		// Broadcast Start Command
 		cmd, _ := json.Marshal(shared.PingCommand{
 			SessionID:       sessionID,
-			TargetURL:       "https://example.com",
+			TargetURL:       target,
 			DurationSeconds: 15,
 		})
 		nc.Publish("ping.start", cmd)
@@ -74,8 +79,9 @@ func main() {
 		}
 	})
 
-	log.Println("API listening on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	apiPort := config.GetEnv("PORT", "8080")
+	log.Printf("API listening on :%s", apiPort)
+	if err := http.ListenAndServe(":"+apiPort, nil); err != nil {
 		log.Fatalf("HTTP server error: %v", err)
 	}
 }
