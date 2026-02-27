@@ -14,24 +14,28 @@ import (
 
 func main() {
 
-	config.Load()
-	natsURL := config.RequireEnv("NATS_URL")
-	nc, err := nats.Connect(natsURL)
+	cfg := config.LoadWorkerConfig()
+	nc, err := nats.Connect(cfg.NATSURL)
 	if err != nil {
 		log.Fatalf("Worker failed to connect to NATS: %v", err)
 	}
 	defer nc.Close()
+	workerName := cfg.WorkerName
+	log.Printf("Worker [%s] connected to NATS at %s", workerName, cfg.NATSURL)
 
-	workerName := config.RequireEnv("WORKER_NAME")
-	log.Printf("Worker [%s] connected to NATS at %s", workerName, natsURL)
-
-	nc.Subscribe("ping.start", func(msg *nats.Msg) {
+	_, err = nc.Subscribe("ping.start", func(msg *nats.Msg) {
 		var cmd shared.PingCommand
-		json.Unmarshal(msg.Data, &cmd)
+		if err := json.Unmarshal(msg.Data, &cmd); err != nil {
+			log.Printf("invalid ping.start payload: %v", err)
+			return
+		}
 		log.Printf("Testing %s for %ds", cmd.TargetURL, cmd.DurationSeconds)
 
 		go runTest(nc, cmd, workerName)
 	})
+	if err != nil {
+		log.Fatalf("failed to subscribe to ping.start: %v", err)
+	}
 
 	select {}
 }

@@ -7,6 +7,19 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type APIConfig struct {
+	NATSHost   string
+	NATSPort   string
+	Port       string
+	CORSOrigin string
+}
+
+type WorkerConfig struct {
+	NATSURL    string
+	NATSPort   string
+	WorkerName string
+}
+
 func Load() {
 	err := godotenv.Load()
 	if err != nil {
@@ -14,17 +27,29 @@ func Load() {
 	}
 }
 
-func GetEnv(key string) string {
-	if value, _ := os.LookupEnv(key); value != "" {
+func requireEnv(key string) string {
+	if value, ok := os.LookupEnv(key); ok && value != "" {
 		return value
 	}
+	log.Fatalf("CRITICAL ERROR: Required environment variable '%s' is missing.", key)
 	return ""
 }
 
-func RequireEnv(key string) string {
-	if v := GetEnv(key); v != "" {
-		return v
+func LoadAPIConfig() *APIConfig {
+	Load()
+	return &APIConfig{
+		NATSHost:   requireEnv("NATS_HOST"),
+		NATSPort:   requireEnv("NATS_PORT"),
+		Port:       requireEnv("PORT"),
+		CORSOrigin: requireEnv("CORS_ORIGIN"),
 	}
-	log.Fatalf("CRITICAL ERROR: Required environment variable '%s' is not set.", key)
-	return ""
+}
+
+func LoadWorkerConfig() *WorkerConfig {
+	Load()
+	return &WorkerConfig{
+		NATSURL:    requireEnv("NATS_URL"),
+		NATSPort:   requireEnv("NATS_PORT"),
+		WorkerName: requireEnv("WORKER_NAME"),
+	}
 }

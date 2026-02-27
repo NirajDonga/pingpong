@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/nats-io/nats-server/v2/server"
@@ -15,11 +16,14 @@ import (
 )
 
 func main() {
-	config.Load()
+	cfg := config.LoadAPIConfig()
 
-	// 1. Start Embedded NATS
-	natsHost := config.RequireEnv("NATS_HOST")
-	opts := &server.Options{Host: natsHost, Port: 4222}
+	natsp, err := strconv.Atoi(cfg.NATSPort)
+	if err != nil {
+		log.Fatalf("Invalid NATS_PORT: %v", err)
+	}
+
+	opts := &server.Options{Host: cfg.NATSHost, Port: natsp}
 	ns, err := server.NewServer(opts)
 	if err != nil {
 		log.Fatalf("Error creating NATS server: %v", err)
@@ -34,9 +38,8 @@ func main() {
 	}
 	defer nc.Close()
 
-	// 2. HTTP Server & SSE Endpoint
 	http.HandleFunc("/api/stream", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", cfg.CORSOrigin)
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
@@ -49,19 +52,32 @@ func main() {
 
 		sessionID := fmt.Sprintf("req_%d", time.Now().UnixMilli())
 
-		target := config.RequireEnv("DEFAULT_TARGET")
+		target := r.URL.Query().Get("target")
+		if target == "" {
+			http.Error(w, "Bad Request: 'target' parameter is required", http.StatusBadRequest)
+			return
+		}
 
-		// Broadcast Start Command
-		cmd, _ := json.Marshal(shared.PingCommand{
+		cmd, err := json.Marshal(shared.PingCommand{
 			SessionID:       sessionID,
 			TargetURL:       target,
 			DurationSeconds: 15,
 		})
-		nc.Publish("ping.start", cmd)
+		if err != nil {
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+			return
+		}
+		if err := nc.Publish("ping.start", cmd); err != nil {
+			http.Error(w, "Failed to publish start command", http.StatusInternalServerError)
+			return
+		}
 
-		// Stream Results Back
 		msgChan := make(chan *nats.Msg, 100)
-		sub, _ := nc.ChanSubscribe(fmt.Sprintf("ping.result.%s", sessionID), msgChan)
+		sub, err := nc.ChanSubscribe(fmt.Sprintf("ping.result.%s", sessionID), msgChan)
+		if err != nil {
+			http.Error(w, "Failed to subscribe to results", http.StatusInternalServerError)
+			return
+		}
 		defer sub.Unsubscribe()
 
 		timeout := time.After(15 * time.Second)
@@ -81,7 +97,7 @@ func main() {
 		}
 	})
 
-	apiPort := config.RequireEnv("PORT")
+	apiPort := cfg.Port
 	log.Printf("API listening on :%s", apiPort)
 	if err := http.ListenAndServe(":"+apiPort, nil); err != nil {
 		log.Fatalf("HTTP server error: %v", err)

@@ -21,7 +21,7 @@ export default function LivePingStream() {
     let finalUrl = targetUrl.trim();
     if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
       finalUrl = `https://${finalUrl}`;
-      setTargetUrl(finalUrl); // Update the input box to show the corrected URL
+      setTargetUrl(finalUrl); 
     }
 
     // 3. Reset state for new run
@@ -31,7 +31,7 @@ export default function LivePingStream() {
     // 4. Connect with the dynamic target URL from .env.local
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     const url = new URL(`${baseUrl}/api/stream`);
-    url.searchParams.append('target', finalUrl); // Pass the URL to Go
+    url.searchParams.append('target', finalUrl); 
 
     const eventSource = new EventSource(url.toString());
     eventSourceRef.current = eventSource;
@@ -45,7 +45,6 @@ export default function LivePingStream() {
         return;
       }
 
-      // OPTIMIZATION: Limit array to 100 items to prevent memory leaks
       setResults((prev) => {
         const newResults = [data, ...prev];
         return newResults.length > 100 ? newResults.slice(0, 100) : newResults;
@@ -65,7 +64,6 @@ export default function LivePingStream() {
     }
   };
 
-  // Cleanup if the user leaves the page entirely
   useEffect(() => {
     return () => {
       if (eventSourceRef.current) {
@@ -76,8 +74,7 @@ export default function LivePingStream() {
 
   return (
     <div className="grid gap-6">
-      
-      {/* --- CONTROLS UI --- */}
+
       <div className="flex flex-col sm:flex-row gap-4 bg-gray-900 p-4 rounded-lg border border-gray-800">
         <input 
           type="url" 
@@ -105,7 +102,6 @@ export default function LivePingStream() {
         )}
       </div>
 
-      {/* --- STATUS INDICATOR --- */}
       <div className="flex items-center gap-3 px-2">
         <StatusIndicator status={status} />
         <span className="text-sm text-gray-400 font-medium tracking-wide uppercase">
@@ -113,7 +109,6 @@ export default function LivePingStream() {
         </span>
       </div>
 
-      {/* --- RESULTS LIST --- */}
       <div className="grid gap-3">
         {results.length === 0 && status !== 'error' && status !== 'connected' ? (
           <div className="text-gray-500 text-center py-12 border border-dashed border-gray-800 rounded-lg">
