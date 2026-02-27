@@ -13,7 +13,10 @@ func Measure(targetURL string) (shared.Metrics, error) {
 	var m shared.Metrics
 	var start, dns, tcp, tlsTime time.Time
 
-	req, _ := http.NewRequest("HEAD", targetURL, nil)
+	req, err := http.NewRequest("HEAD", targetURL, nil)
+	if err != nil {
+		return m, err
+	}
 
 	trace := &httptrace.ClientTrace{
 		DNSStart:             func(_ httptrace.DNSStartInfo) { dns = time.Now() },
