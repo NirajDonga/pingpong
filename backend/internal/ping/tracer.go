@@ -15,7 +15,6 @@ func Measure(targetURL string) (shared.Metrics, error) {
 
 	req, _ := http.NewRequest("HEAD", targetURL, nil)
 
-	// Attach hooks to record exact network timings
 	trace := &httptrace.ClientTrace{
 		DNSStart:             func(_ httptrace.DNSStartInfo) { dns = time.Now() },
 		DNSDone:              func(_ httptrace.DNSDoneInfo) { m.DNSMs = int(time.Since(dns).Milliseconds()) },

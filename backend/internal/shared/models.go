@@ -9,12 +9,12 @@ type PingCommand struct {
 }
 
 type PingResult struct {
-	SessionID  string    `json:"sessionId"`
-	WorkerID   string    `json:"workerId"`
-	Timestamp  time.Time `json:"timestamp"`
-	Success    bool      `json:"success"`
-	Metrics    Metrics   `json:"metrics"`
-	Error      string    `json:"error,omitempty"`
+	SessionID string    `json:"sessionId"`
+	WorkerID  string    `json:"workerId"`
+	Timestamp time.Time `json:"timestamp"`
+	Success   bool      `json:"success"`
+	Metrics   Metrics   `json:"metrics"`
+	Error     string    `json:"error,omitempty"`
 }
 
 type Metrics struct {

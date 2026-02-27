@@ -15,14 +15,14 @@ import (
 func main() {
 
 	config.Load()
-	natsURL := config.GetEnv("NATS_URL", "nats://127.0.0.1:4222")
+	natsURL := config.RequireEnv("NATS_URL")
 	nc, err := nats.Connect(natsURL)
 	if err != nil {
 		log.Fatalf("Worker failed to connect to NATS: %v", err)
 	}
 	defer nc.Close()
 
-	workerName := config.GetEnv("WORKER_NAME", "local-worker")
+	workerName := config.RequireEnv("WORKER_NAME")
 	log.Printf("Worker [%s] connected to NATS at %s", workerName, natsURL)
 
 	nc.Subscribe("ping.start", func(msg *nats.Msg) {

@@ -18,7 +18,7 @@ func main() {
 	config.Load()
 
 	// 1. Start Embedded NATS
-	natsHost := config.GetEnv("NATS_HOST", "127.0.0.1")
+	natsHost := config.RequireEnv("NATS_HOST")
 	opts := &server.Options{Host: natsHost, Port: 4222}
 	ns, err := server.NewServer(opts)
 	if err != nil {
@@ -49,7 +49,7 @@ func main() {
 
 		sessionID := fmt.Sprintf("req_%d", time.Now().UnixMilli())
 
-		target := config.GetEnv("DEFAULT_TARGET", "https://example.com")
+		target := config.RequireEnv("DEFAULT_TARGET")
 
 		// Broadcast Start Command
 		cmd, _ := json.Marshal(shared.PingCommand{
@@ -81,7 +81,7 @@ func main() {
 		}
 	})
 
-	apiPort := config.GetEnv("PORT", "8080")
+	apiPort := config.RequireEnv("PORT")
 	log.Printf("API listening on :%s", apiPort)
 	if err := http.ListenAndServe(":"+apiPort, nil); err != nil {
 		log.Fatalf("HTTP server error: %v", err)

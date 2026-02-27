@@ -4,10 +4,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/joho/godotenv" // New import
+	"github.com/joho/godotenv"
 )
 
-// Load reads the .env file and loads it into the environment
 func Load() {
 	err := godotenv.Load()
 	if err != nil {
@@ -15,9 +14,17 @@ func Load() {
 	}
 }
 
-func GetEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
+func GetEnv(key string) string {
+	if value, _ := os.LookupEnv(key); value != "" {
 		return value
 	}
-	return fallback
+	return ""
+}
+
+func RequireEnv(key string) string {
+	if v := GetEnv(key); v != "" {
+		return v
+	}
+	log.Fatalf("CRITICAL ERROR: Required environment variable '%s' is not set.", key)
+	return ""
 }
