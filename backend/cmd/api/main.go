@@ -15,6 +15,8 @@ import (
 )
 
 func main() {
+	config.Load()
+
 	// 1. Start Embedded NATS
 	natsHost := config.GetEnv("NATS_HOST", "127.0.0.1")
 	opts := &server.Options{Host: natsHost, Port: 4222}

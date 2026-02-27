@@ -13,6 +13,8 @@ import (
 )
 
 func main() {
+
+	config.Load()
 	natsURL := config.GetEnv("NATS_URL", "nats://127.0.0.1:4222")
 	nc, err := nats.Connect(natsURL)
 	if err != nil {
