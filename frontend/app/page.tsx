@@ -4,8 +4,7 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen bg-black text-white p-8 font-mono">
       <div className="max-w-5xl mx-auto">
-        
-        {/* Static Header - Rendered on Server */}
+
         <header className="mb-10 border-b border-gray-800 pb-6">
           <h1 className="text-4xl font-extrabold tracking-tight mb-2">
             Ping<span className="text-blue-500">Pong</span>
@@ -13,7 +12,6 @@ export default function Dashboard() {
           <p className="text-gray-400">Distributed Global Network Monitor</p>
         </header>
 
-        {/* Dynamic Client Stream */}
         <LivePingStream />
 
       </div>

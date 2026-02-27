@@ -8,8 +8,10 @@ export default function LivePingStream() {
   const [status, setStatus] = useState<'idle' | 'connected' | 'completed' | 'error'>('idle');
 
   useEffect(() => {
-    setStatus('connected');
-    const eventSource = new EventSource('http://localhost:8080/api/stream');
+   setStatus('connected');
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const eventSource = new EventSource(`${baseUrl}/api/stream`);
 
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -33,7 +35,7 @@ export default function LivePingStream() {
       eventSource.close();
     };
 
-    return () => eventSource.close(); // Cleanup on unmount
+    return () => eventSource.close(); 
   }, []);
 
   return (
