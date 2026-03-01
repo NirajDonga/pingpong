@@ -104,29 +104,31 @@ export default function LatencyChart({ data, status }: { data: PingResult[], sta
       {/* Chart */}
       <div className="flex-1 w-full relative min-h-0">
         {data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="index" hide />
-              <YAxis stroke="#52525b" fontSize={11} tickFormatter={(val) => `${val}ms`} />
-              <Tooltip
-                content={<CustomTooltip />}
-                cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1, strokeDasharray: '4 4' }}
-              />
-              {uniqueWorkers.map((workerId, index) => (
-                <Line
-                  key={workerId}
-                  type="monotone"
-                  dataKey={workerId}
-                  stroke={WORKER_COLORS[index % WORKER_COLORS.length]}
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                  connectNulls
+          <div className="absolute inset-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                <XAxis dataKey="index" hide />
+                <YAxis stroke="#52525b" fontSize={11} tickFormatter={(val) => `${val}ms`} />
+                <Tooltip
+                  content={<CustomTooltip />}
+                  cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1, strokeDasharray: '4 4' }}
                 />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+                {uniqueWorkers.map((workerId, index) => (
+                  <Line
+                    key={workerId}
+                    type="monotone"
+                    dataKey={workerId}
+                    stroke={WORKER_COLORS[index % WORKER_COLORS.length]}
+                    strokeWidth={2}
+                    dot={false}
+                    isAnimationActive={false}
+                    connectNulls
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-600">
             <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
