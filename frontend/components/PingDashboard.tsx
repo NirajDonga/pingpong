@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { PingResult } from '@/types/ping';
 import ControlPanel from './ControlPanel';
 import LatencyChart from './LatencyChart';
@@ -62,18 +62,54 @@ export default function PingDashboard() {
     return () => eventSourceRef.current?.close();
   }, []);
 
+  const uniqueWorkers = useMemo(() => Array.from(new Set(results.map(r => r.workerId))), [results]);
+
+  // Stats for ControlPanel
+  const { totalPings, successRate, avgLatency } = useMemo(() => {
+    const total = results.length;
+    const successful = results.filter(r => r.success);
+    const rate = total === 0 ? 100 : (successful.length / total) * 100;
+    const avg = successful.length === 0
+      ? 0
+      : successful.reduce((s, r) => s + r.metrics.totalMs, 0) / successful.length;
+    return { totalPings: total, successRate: rate, avgLatency: avg };
+  }, [results]);
+
   return (
-    <div className="grid gap-6">
-      <ControlPanel 
-        targetUrl={targetUrl} 
-        setTargetUrl={setTargetUrl} 
-        status={status} 
-        onStart={startStream} 
-        onStop={stopStream} 
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="flex flex-col flex-1 min-h-0 gap-5">
+      <div className="flex-shrink-0">
+        <ControlPanel
+          targetUrl={targetUrl}
+          setTargetUrl={setTargetUrl}
+          status={status}
+          onStart={startStream}
+          onStop={stopStream}
+          totalPings={totalPings}
+          successRate={successRate}
+          avgLatency={avgLatency}
+        />
+      </div>
+
+      {/* Chart */}
+      <div className="h-[38%] min-h-[220px] flex-shrink-0">
         <LatencyChart data={results} status={status} />
-        <LogViewer logs={results} />
+      </div>
+
+      {/* Worker Log Grid */}
+      <div className="flex-1 min-h-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 h-full overflow-x-auto pb-2">
+          {uniqueWorkers.length === 0 ? (
+            <LogViewer workerId="Awaiting Node Connection…" logs={[]} />
+          ) : (
+            uniqueWorkers.map(worker => (
+              <LogViewer
+                key={worker}
+                workerId={worker}
+                logs={results.filter(r => r.workerId === worker)}
+              />
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
