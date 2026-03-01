@@ -1,6 +1,6 @@
 import { Activity, AlertCircle, TrendingDown, TrendingUp, Minus } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { useMemo } from 'react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { PingResult } from '@/types/ping';
 
 // A palette of distinct colors for different workers
@@ -39,6 +39,20 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export default function LatencyChart({ data, status }: { data: PingResult[], status: string }) {
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const el = chartContainerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setChartSize({ width: Math.floor(width), height: Math.floor(height) });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const uniqueWorkers = useMemo(() => Array.from(new Set(data.map(d => d.workerId))), [data]);
 
   const chartData = useMemo(() => {
@@ -102,11 +116,9 @@ export default function LatencyChart({ data, status }: { data: PingResult[], sta
       </div>
 
       {/* Chart */}
-      <div className="flex-1 w-full relative min-h-[120px]">
-        {data.length > 0 ? (
-          <div className="absolute inset-0">
-            <ResponsiveContainer width="99%" height="99%" minWidth={1} minHeight={1}>
-              <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+      <div className="flex-1 w-full min-h-[120px]" ref={chartContainerRef}>
+        {data.length > 0 && chartSize.width > 0 && chartSize.height > 0 ? (
+            <LineChart width={chartSize.width} height={chartSize.height} data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
                 <XAxis dataKey="index" hide />
                 <YAxis stroke="#52525b" fontSize={11} tickFormatter={(val) => `${val}ms`} />
@@ -127,10 +139,8 @@ export default function LatencyChart({ data, status }: { data: PingResult[], sta
                   />
                 ))}
               </LineChart>
-            </ResponsiveContainer>
-          </div>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-600">
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-600">
             <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
               <AlertCircle className="w-8 h-8 opacity-40" />
             </div>
