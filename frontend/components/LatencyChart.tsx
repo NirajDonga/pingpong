@@ -105,7 +105,7 @@ export default function LatencyChart({ data, status }: { data: PingResult[], sta
       <div className="flex-1 w-full relative min-h-0">
         {data.length > 0 ? (
           <div className="absolute inset-0">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="99%" height="99%" minWidth={1} minHeight={1}>
               <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
                 <XAxis dataKey="index" hide />
