@@ -102,7 +102,7 @@ export default function LatencyChart({ data, status }: { data: PingResult[], sta
       </div>
 
       {/* Chart */}
-      <div className="flex-1 w-full relative min-h-0">
+      <div className="flex-1 w-full relative min-h-[120px]">
         {data.length > 0 ? (
           <div className="absolute inset-0">
             <ResponsiveContainer width="99%" height="99%" minWidth={1} minHeight={1}>
