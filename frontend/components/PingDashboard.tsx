@@ -25,7 +25,7 @@ export default function PingDashboard() {
     setStatus('connected');
     setResults([]);
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/$/, '');
     const url = new URL(`${baseUrl}/api/stream`);
     url.searchParams.append('target', finalUrl); 
 

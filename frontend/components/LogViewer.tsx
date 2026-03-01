@@ -68,7 +68,7 @@ export default function LogViewer({ workerId, logs }: { workerId: string; logs: 
                     <span className="ml-auto text-[10px] text-gray-600 font-mono">{new Date(res.timestamp).toLocaleTimeString()}</span>
                   </div>
                   <div className="text-xs text-rose-400/80 font-mono bg-rose-500/10 p-2 rounded-lg border border-rose-500/10">
-                    {res.error || 'Connection timeout'}
+                    {res.error || 'Unknown error'}
                   </div>
                 </div>
               );

@@ -53,6 +53,9 @@ func runTest(nc *nats.Conn, cmd shared.PingCommand, workerName string) {
 			Success:   err == nil,
 			Metrics:   metrics,
 		}
+		if err != nil {
+			result.Error = err.Error()
+		}
 
 		bytes, _ := json.Marshal(result)
 		nc.Publish(topic, bytes)
