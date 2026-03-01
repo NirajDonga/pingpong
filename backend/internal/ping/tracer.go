@@ -36,6 +36,7 @@ func Measure(targetURL string) (shared.Metrics, error) {
 	// Create a transport that DOES NOT reuse connections
 	transport := &http.Transport{
 		DisableKeepAlives: true,
+		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
 	}
 
 	client := &http.Client{
