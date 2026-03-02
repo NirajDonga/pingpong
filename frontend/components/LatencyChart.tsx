@@ -1,153 +1,96 @@
-import { Activity, AlertCircle, TrendingDown, TrendingUp, Minus } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+'use client';
+
+import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { PingResult } from '@/types/ping';
 
-// A palette of distinct colors for different workers
-const WORKER_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#ec4899', '#06b6d4'];
+export const CHART_COLORS = ['#22c55e', '#60a5fa', '#a78bfa', '#f59e0b', '#f87171', '#ec4899'];
 
-// Custom Tooltip Component
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    // We grab the color assigned to the active line
-    const color = payload[0].color || '#3b82f6';
-    // The actual total for this specific point is stored under the worker's ID key
-    const total = data[data.worker];
-
-    return (
-      <div className="bg-[#18181b] border border-white/10 p-4 rounded-xl shadow-xl backdrop-blur-md">
-        <p className="text-gray-400 text-xs font-mono mb-2 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></span>
-          {data.worker}
-        </p>
-        <div className="text-2xl font-bold text-white mb-3">
-          {total} <span className="text-sm text-gray-500 font-normal">ms</span>
+function ChartTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const data = payload[0]?.payload;
+  return (
+    <div className="bg-[#1a1a1a] border border-neutral-700/50 px-3 py-2.5 rounded-lg shadow-2xl">
+      {payload.filter((p: any) => p.value != null).map((p: any) => (
+        <div key={p.dataKey} className="flex items-center gap-2 py-0.5">
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+          <span className="text-neutral-400 text-xs">{p.dataKey}</span>
+          <span className="text-white text-xs font-mono font-semibold ml-auto pl-4">{p.value}ms</span>
         </div>
-        {data.metrics && (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-mono">
-            <div className="text-purple-400">DNS: {data.metrics.dnsMs}ms</div>
-            <div className="text-blue-400">TCP: {data.metrics.tcpMs}ms</div>
-            <div className="text-amber-400">TLS: {data.metrics.tlsMs}ms</div>
-            <div className="text-emerald-400">TTFB: {data.metrics.ttfbMs}ms</div>
-          </div>
-        )}
-      </div>
-    );
-  }
-  return null;
-};
+      ))}
+      {data?.metrics && (
+        <div className="mt-2 pt-2 border-t border-neutral-700/50 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] font-mono text-neutral-500">
+          <span>DNS {data.metrics.dnsMs}ms</span>
+          <span>TCP {data.metrics.tcpMs}ms</span>
+          <span>TLS {data.metrics.tlsMs}ms</span>
+          <span>TTFB {data.metrics.ttfbMs}ms</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
-export default function LatencyChart({ data, status }: { data: PingResult[], status: string }) {
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
+export default function LatencyChart({ data }: { data: PingResult[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    const el = chartContainerRef.current;
+    const el = containerRef.current;
     if (!el) return;
-    const observer = new ResizeObserver((entries) => {
+    const obs = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
-      setChartSize({ width: Math.floor(width), height: Math.floor(height) });
+      setSize({ width: Math.floor(width), height: Math.floor(height) });
     });
-    observer.observe(el);
-    return () => observer.disconnect();
+    obs.observe(el);
+    return () => obs.disconnect();
   }, []);
 
-  const uniqueWorkers = useMemo(() => Array.from(new Set(data.map(d => d.workerId))), [data]);
+  const workers = useMemo(() => Array.from(new Set(data.map(d => d.workerId))), [data]);
 
   const chartData = useMemo(() => {
     return [...data].reverse().map((r, i) => {
       const point: any = { index: i, worker: r.workerId, metrics: r.metrics };
-      point[r.workerId] = r.metrics.totalMs;
+      point[r.workerId] = r.success ? r.metrics.totalMs : null;
       return point;
     });
   }, [data]);
 
-  // Compute global min / max / avg across all successful results
-  const stats = useMemo(() => {
-    const vals = data.filter(d => d.success).map(d => d.metrics.totalMs);
-    if (vals.length === 0) return null;
-    return {
-      min: Math.min(...vals),
-      max: Math.max(...vals),
-      avg: vals.reduce((a, b) => a + b, 0) / vals.length,
-    };
-  }, [data]);
-
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-sm flex flex-col h-full w-full">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 flex-shrink-0">
-        <h2 className="text-base font-semibold flex items-center gap-2 text-white">
-          <Activity className="w-4 h-4 text-blue-400" />
-          Live Latency
-        </h2>
-
-        <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
-          {/* Worker legend */}
-          {uniqueWorkers.map((worker, i) => (
-            <div key={worker} className="flex items-center gap-1.5 text-gray-400">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: WORKER_COLORS[i % WORKER_COLORS.length] }} />
-              {worker}
-            </div>
+    <div ref={containerRef} className="h-[260px] w-full">
+      {size.width > 0 && size.height > 0 && chartData.length > 0 && (
+        <AreaChart width={size.width} height={size.height} data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 4 }}>
+          <defs>
+            {workers.map((w, i) => (
+              <linearGradient key={w} id={`area-${i}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.15} />
+                <stop offset="100%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0} />
+              </linearGradient>
+            ))}
+          </defs>
+          <CartesianGrid stroke="#1a1a1a" vertical={false} />
+          <XAxis dataKey="index" hide />
+          <YAxis
+            tick={{ fill: '#525252', fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v) => `${v}ms`}
+          />
+          <Tooltip content={<ChartTooltip />} cursor={{ stroke: '#333', strokeWidth: 1 }} />
+          {workers.map((w, i) => (
+            <Area
+              key={w}
+              type="monotone"
+              dataKey={w}
+              stroke={CHART_COLORS[i % CHART_COLORS.length]}
+              strokeWidth={1.5}
+              fill={`url(#area-${i})`}
+              dot={false}
+              isAnimationActive={false}
+              connectNulls
+            />
           ))}
-
-          {/* Stats pills */}
-          {stats && (
-            <div className="flex items-center gap-2 ml-2">
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                <TrendingDown className="w-3 h-3" /> {stats.min}ms
-              </span>
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400">
-                <Minus className="w-3 h-3" /> {stats.avg.toFixed(0)}ms
-              </span>
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-400">
-                <TrendingUp className="w-3 h-3" /> {stats.max}ms
-              </span>
-            </div>
-          )}
-
-          {/* Status badge */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/5">
-            <span className={`w-2 h-2 rounded-full ${status === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-500'}`} />
-            <span className="tracking-wider text-gray-300 uppercase">{status}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Chart */}
-      <div className="flex-1 w-full min-h-[120px]" ref={chartContainerRef}>
-        {data.length > 0 && chartSize.width > 0 && chartSize.height > 0 ? (
-            <LineChart width={chartSize.width} height={chartSize.height} data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="index" hide />
-                <YAxis stroke="#52525b" fontSize={11} tickFormatter={(val) => `${val}ms`} />
-                <Tooltip
-                  content={<CustomTooltip />}
-                  cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1, strokeDasharray: '4 4' }}
-                />
-                {uniqueWorkers.map((workerId, index) => (
-                  <Line
-                    key={workerId}
-                    type="monotone"
-                    dataKey={workerId}
-                    stroke={WORKER_COLORS[index % WORKER_COLORS.length]}
-                    strokeWidth={2}
-                    dot={false}
-                    isAnimationActive={false}
-                    connectNulls
-                  />
-                ))}
-              </LineChart>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-600">
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-              <AlertCircle className="w-8 h-8 opacity-40" />
-            </div>
-            <p className="text-sm">Awaiting telemetry data…</p>
-          </div>
-        )}
-      </div>
+        </AreaChart>
+      )}
     </div>
   );
 }
