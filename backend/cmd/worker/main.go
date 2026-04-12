@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"time"
 
@@ -13,53 +12,55 @@ import (
 )
 
 func main() {
-
 	cfg := config.LoadWorkerConfig()
-	nc, err := nats.Connect(cfg.NATSURL)
+
+	nc, err := nats.Connect(cfg.NATSUrl)
 	if err != nil {
 		log.Fatalf("Worker failed to connect to NATS: %v", err)
 	}
+
 	defer nc.Close()
 	workerName := cfg.WorkerName
-	log.Printf("Worker [%s] connected to NATS at %s", workerName, cfg.NATSURL)
 
-	_, err = nc.Subscribe("ping.start", func(msg *nats.Msg) {
-		var cmd shared.PingCommand
-		if err := json.Unmarshal(msg.Data, &cmd); err != nil {
+	_, err = nc.Subscribe("start", func(msg *nats.Msg) {
+		var content shared.RequstTopic
+		if err := json.Unmarshal(msg.Data, &content); err != nil {
 			log.Printf("invalid ping.start payload: %v", err)
 			return
 		}
-		log.Printf("Testing %s for %ds", cmd.TargetURL, cmd.DurationSeconds)
-
-		go runTest(nc, cmd, workerName)
+		go runPinger(nc, content, workerName)
 	})
 	if err != nil {
-		log.Fatalf("failed to subscribe to ping.start: %v", err)
+		log.Fatalf("Failed to subscribe: %v", err)
 	}
 
 	select {}
 }
 
-func runTest(nc *nats.Conn, cmd shared.PingCommand, workerName string) {
-	topic := fmt.Sprintf("ping.result.%s", cmd.SessionID)
+func runPinger(nc *nats.Conn, content shared.RequstTopic, workerName string) {
+	// 1. Ticker generates a signal every 1 second
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
 
-	for i := 0; i < cmd.DurationSeconds; i++ {
-		metrics, err := ping.Measure(cmd.TargetURL)
+	// 2. Timeout generates exactly ONE signal after DurationSeconds (e.g. 60s)
+	duration := time.Duration(content.DurationSeconds) * time.Second
+	timeout := time.After(duration)
 
-		result := shared.PingResult{
-			SessionID: cmd.SessionID,
-			WorkerID:  workerName,
-			Timestamp: time.Now(),
-			Success:   err == nil,
-			Metrics:   metrics,
+	for {
+		select {
+		case <-timeout:
+			return
+
+		case <-ticker.C:
+			trace := ping.Measure(content.TargetURL, content.SessionID, workerName)
+
+			resultBytes, err := json.Marshal(trace)
+			if err != nil {
+				log.Printf("Worker failed to marshal live result: %v", err)
+				continue
+			}
+
+			nc.Publish(content.SessionID, resultBytes)
 		}
-		if err != nil {
-			result.Error = err.Error()
-		}
-
-		bytes, _ := json.Marshal(result)
-		nc.Publish(topic, bytes)
-
-		time.Sleep(1 * time.Second)
 	}
 }

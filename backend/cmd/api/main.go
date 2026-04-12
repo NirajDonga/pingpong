@@ -5,32 +5,34 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
-
-	"github.com/nats-io/nats-server/v2/server"
-	"github.com/nats-io/nats.go"
 
 	"github.com/NirajDonga/pingpong/backend/internal/config"
 	"github.com/NirajDonga/pingpong/backend/internal/shared"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+	"github.com/nats-io/nats-server/v2/server"
+	"github.com/nats-io/nats.go"
 )
 
 func main() {
-	cfg := config.LoadAPIConfig()
 
-	natsp, err := strconv.Atoi(cfg.NATSPort)
-	if err != nil {
-		log.Fatalf("Invalid NATS_PORT: %v", err)
+	cfg := config.LoadApiConfig()
+
+	opts := &server.Options{
+		Host: "127.0.0.1",
+		Port: 4222,
 	}
 
-	opts := &server.Options{Host: cfg.NATSHost, Port: natsp}
 	ns, err := server.NewServer(opts)
 	if err != nil {
 		log.Fatalf("Error creating NATS server: %v", err)
 	}
 
 	go ns.Start()
-	ns.ReadyForConnections(5 * time.Second)
+	if !ns.ReadyForConnections(5 * time.Second) {
+		log.Fatal("NATS server did not become ready within 5s")
+	}
 
 	nc, err := nats.Connect(ns.ClientURL())
 	if err != nil {
@@ -38,68 +40,59 @@ func main() {
 	}
 	defer nc.Close()
 
-	http.HandleFunc("/api/stream", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
 
-		flusher, ok := w.(http.Flusher)
-		if !ok {
-			http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+	router := gin.Default()
+	router.GET("/api/ping", func(c *gin.Context) {
+		target := c.Query("target")
+		if target == "" {
+			c.String(http.StatusBadRequest, "Bad Request: 'target' parameter is required")
 			return
 		}
+
+		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+		if err != nil {
+			log.Printf("websocket upgrade failed: %v", err)
+			return
+		}
+		defer conn.Close()
 
 		sessionID := fmt.Sprintf("req_%d", time.Now().UnixMilli())
 
-		target := r.URL.Query().Get("target")
-		if target == "" {
-			http.Error(w, "Bad Request: 'target' parameter is required", http.StatusBadRequest)
-			return
-		}
-
-		cmd, err := json.Marshal(shared.PingCommand{
+		content := shared.RequstTopic{
 			SessionID:       sessionID,
 			TargetURL:       target,
-			DurationSeconds: 15,
-		})
-		if err != nil {
-			http.Error(w, "Internal error", http.StatusInternalServerError)
-			return
+			DurationSeconds: 60,
 		}
-		if err := nc.Publish("ping.start", cmd); err != nil {
-			http.Error(w, "Failed to publish start command", http.StatusInternalServerError)
+		contentBytes, err := json.Marshal(content)
+		if err != nil {
+			log.Printf("Failed to format NATS message: %v", err)
 			return
 		}
 
-		msgChan := make(chan *nats.Msg, 100)
-		sub, err := nc.ChanSubscribe(fmt.Sprintf("ping.result.%s", sessionID), msgChan)
+		sub, err := nc.Subscribe(sessionID, func(msg *nats.Msg) {
+			if writeErr := conn.WriteMessage(websocket.TextMessage, msg.Data); writeErr != nil {
+				log.Printf("Failed to write to websocket for session %s: %v", sessionID, writeErr)
+			}
+		})
 		if err != nil {
-			http.Error(w, "Failed to subscribe to results", http.StatusInternalServerError)
+			log.Printf("failed to subscribe to NATS results: %v", err)
 			return
 		}
 		defer sub.Unsubscribe()
 
-		timeout := time.After(15 * time.Second)
+		nc.Publish("start", contentBytes)
 
 		for {
-			select {
-			case msg := <-msgChan:
-				fmt.Fprintf(w, "data: %s\n\n", string(msg.Data))
-				flusher.Flush()
-			case <-timeout:
-				fmt.Fprintf(w, "data: {\"status\": \"completed\"}\n\n")
-				flusher.Flush()
-				return
-			case <-r.Context().Done():
-				return
+			_, _, readErr := conn.ReadMessage()
+			if readErr != nil {
+				log.Printf("Client disconnected from session %s", sessionID)
+				break
 			}
 		}
 	})
 
-	apiPort := cfg.Port
-	log.Printf("API listening on :%s", apiPort)
-	if err := http.ListenAndServe(":"+apiPort, nil); err != nil {
-		log.Fatalf("HTTP server error: %v", err)
-	}
+	router.Run(cfg.Port)
 }

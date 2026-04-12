@@ -12,10 +12,10 @@ export default function PingDashboard() {
   const [results, setResults] = useState<PingResult[]>([]);
   const [status, setStatus] = useState<'idle' | 'connected' | 'completed' | 'error'>('idle');
 
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
 
   const startStream = () => {
-    if (eventSourceRef.current) eventSourceRef.current.close();
+    if (socketRef.current) socketRef.current.close();
 
     let finalUrl = targetUrl.trim();
     if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
@@ -27,40 +27,57 @@ export default function PingDashboard() {
     setResults([]);
 
     const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/$/, '');
-    const url = new URL(`${baseUrl}/api/stream`);
+    const wsBaseUrl = baseUrl.replace(/^http/, 'ws');
+    const url = new URL(`${wsBaseUrl}/api/ws`);
     url.searchParams.append('target', finalUrl);
 
-    const eventSource = new EventSource(url.toString());
-    eventSourceRef.current = eventSource;
+    const socket = new WebSocket(url.toString());
+    socketRef.current = socket;
+    let completed = false;
 
-    eventSource.onmessage = (event) => {
+    socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.status === 'completed') {
+        completed = true;
         setStatus('completed');
-        eventSource.close();
+        socket.close();
         return;
       }
+
+      if (data.status === 'error') {
+        setStatus('error');
+        socket.close();
+        return;
+      }
+
       setResults((prev) => {
         const newResults = [data, ...prev];
         return newResults.length > 500 ? newResults.slice(0, 500) : newResults;
       });
     };
 
-    eventSource.onerror = () => {
-      setStatus('error');
-      eventSource.close();
+    socket.onerror = () => {
+      if (!completed) {
+        setStatus('error');
+      }
+    };
+
+    socket.onclose = () => {
+      if (!completed) {
+        setStatus((prev) => (prev === 'completed' ? 'completed' : 'error'));
+      }
     };
   };
 
   const stopStream = () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
+    if (socketRef.current) {
       setStatus('completed');
+      socketRef.current.close();
     }
   };
 
   useEffect(() => {
-    return () => eventSourceRef.current?.close();
+    return () => socketRef.current?.close();
   }, []);
 
   const uniqueWorkers = useMemo(() => Array.from(new Set(results.map(r => r.workerId))), [results]);

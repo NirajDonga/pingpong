@@ -7,49 +7,47 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type APIConfig struct {
-	NATSHost   string
-	NATSPort   string
+type ApiConfig struct {
 	Port       string
+	NATSUrl    string
 	CORSOrigin string
 }
 
 type WorkerConfig struct {
-	NATSURL    string
-	NATSPort   string
+	NATSUrl    string
 	WorkerName string
 }
 
-func Load() {
+func load() {
+	// put variables in os
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("No .env file found, using system environment or fallbacks")
+		log.Println("No .env file found, using system environment.")
 	}
 }
 
-func requireEnv(key string) string {
-	if value, ok := os.LookupEnv(key); ok && value != "" {
-		return value
+func loadFromOS(key string) string {
+	value, ok := os.LookupEnv(key)
+	if !ok || value == "" {
+		log.Fatalf("Enviroment Variable '%s' missing", key)
+		return ""
 	}
-	log.Fatalf("CRITICAL ERROR: Required environment variable '%s' is missing.", key)
-	return ""
+	return value
 }
 
-func LoadAPIConfig() *APIConfig {
-	Load()
-	return &APIConfig{
-		NATSHost:   requireEnv("NATS_HOST"),
-		NATSPort:   requireEnv("NATS_PORT"),
-		Port:       requireEnv("PORT"),
-		CORSOrigin: requireEnv("CORS_ORIGIN"),
+func LoadApiConfig() *ApiConfig {
+	load()
+	return &ApiConfig{
+		Port:       loadFromOS("PORT"),
+		NATSUrl:    loadFromOS("NATS_URL"),
+		CORSOrigin: loadFromOS("CORS_ORIGIN"),
 	}
 }
 
 func LoadWorkerConfig() *WorkerConfig {
-	Load()
+	load()
 	return &WorkerConfig{
-		NATSURL:    requireEnv("NATS_URL"),
-		NATSPort:   requireEnv("NATS_PORT"),
-		WorkerName: requireEnv("WORKER_NAME"),
+		NATSUrl:    loadFromOS("NATS_URL"),
+		WorkerName: loadFromOS("WORKER_NAME"),
 	}
 }
