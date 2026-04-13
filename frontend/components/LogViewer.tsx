@@ -1,12 +1,12 @@
 import { PingResult } from '@/types/ping';
 import { useMemo } from 'react';
 
-export default function LogViewer({ workerId, logs }: { workerId: string; logs: PingResult[] }) {
-  const successCount = useMemo(() => logs.filter(l => l.success).length, [logs]);
+export default function LogViewer({ workerName, logs }: { workerName: string; logs: PingResult[] }) {
+  const successCount = useMemo(() => logs.filter(l => !l.error).length, [logs]);
   const uptime = logs.length > 0 ? ((successCount / logs.length) * 100).toFixed(1) : '—';
   const avgMs = useMemo(() => {
-    const s = logs.filter(l => l.success);
-    return s.length > 0 ? (s.reduce((a, r) => a + r.metrics.totalMs, 0) / s.length).toFixed(0) : '—';
+    const s = logs.filter(l => !l.error);
+    return s.length > 0 ? (s.reduce((a, r) => a + r.totalMs, 0) / s.length).toFixed(0) : '—';
   }, [logs]);
 
   return (
@@ -20,7 +20,7 @@ export default function LogViewer({ workerId, logs }: { workerId: string; logs: 
               successCount > 0 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' :
               'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]'
             }`} />
-            <span className="text-sm font-medium text-white truncate max-w-[200px]">{workerId}</span>
+            <span className="text-sm font-medium text-white truncate max-w-[200px]">{workerName}</span>
           </div>
           {logs.length > 0 && (
             <div className="flex items-center gap-3 text-xs text-neutral-500">
@@ -36,20 +36,23 @@ export default function LogViewer({ workerId, logs }: { workerId: string; logs: 
       {logs.length > 0 && (
         <div className="px-4 py-3 border-b border-neutral-800/70">
           <div className="flex gap-[2px] h-7 items-end">
-            {[...logs].reverse().slice(-40).map((res, i) => (
-              <div
-                key={i}
-                className={`flex-1 rounded-[2px] min-w-[3px] transition-all ${
-                  res.success ? 'bg-emerald-500/60 hover:bg-emerald-500' : 'bg-red-500/60 hover:bg-red-500'
-                }`}
-                style={{
-                  height: res.success
-                    ? `${Math.max(20, Math.min(100, (res.metrics.totalMs / 300) * 100))}%`
-                    : '100%'
-                }}
-                title={res.success ? `${res.metrics.totalMs}ms` : res.error || 'Failed'}
-              />
-            ))}
+            {[...logs].reverse().slice(-40).map((res, i) => {
+              const isSuccess = !res.error;
+              return (
+                <div
+                  key={i}
+                  className={`flex-1 rounded-[2px] min-w-[3px] transition-all ${
+                    isSuccess ? 'bg-emerald-500/60 hover:bg-emerald-500' : 'bg-red-500/60 hover:bg-red-500'
+                  }`}
+                  style={{
+                    height: isSuccess
+                      ? `${Math.max(20, Math.min(100, (res.totalMs / 300) * 100))}%`
+                      : '100%'
+                  }}
+                  title={isSuccess ? `${res.totalMs}ms` : res.error || 'Failed'}
+                />
+              );
+            })}
           </div>
         </div>
       )}
@@ -61,31 +64,38 @@ export default function LogViewer({ workerId, logs }: { workerId: string; logs: 
             Waiting for data…
           </div>
         ) : (
-          logs.slice(0, 50).map((res, i) => (
-            <div
-              key={`${res.workerId}-${res.timestamp}-${i}`}
-              className="px-4 py-2.5 flex items-center justify-between text-xs border-b border-neutral-800/40 last:border-b-0 hover:bg-white/[0.02] transition-colors"
-            >
-              <div className="flex items-center gap-2.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${res.success ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                <span className="text-neutral-500 font-mono tabular-nums">
-                  {new Date(res.timestamp).toLocaleTimeString()}
-                </span>
+          logs.slice(0, 50).map((res, i) => {
+            const isSuccess = !res.error;
+            return (
+              <div
+                key={`${res.workerName}-${res.sessionId}-${i}`}
+                className="px-4 py-2.5 flex items-center justify-between text-xs border-b border-neutral-800/40 last:border-b-0 hover:bg-white/[0.02] transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${isSuccess ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                  <span className="text-neutral-500 font-mono tabular-nums">
+                    #{results_index(logs.length, i)}
+                  </span>
+                </div>
+                {isSuccess ? (
+                  <span className={`font-mono font-medium tabular-nums ${
+                    res.totalMs < 100 ? 'text-emerald-400' :
+                    res.totalMs < 300 ? 'text-amber-400' : 'text-red-400'
+                  }`}>
+                    {res.totalMs}ms
+                  </span>
+                ) : (
+                  <span className="text-red-400 truncate max-w-[180px]">{res.error || 'Failed'}</span>
+                )}
               </div>
-              {res.success ? (
-                <span className={`font-mono font-medium tabular-nums ${
-                  res.metrics.totalMs < 100 ? 'text-emerald-400' :
-                  res.metrics.totalMs < 300 ? 'text-amber-400' : 'text-red-400'
-                }`}>
-                  {res.metrics.totalMs}ms
-                </span>
-              ) : (
-                <span className="text-red-400 truncate max-w-[180px]">{res.error || 'Failed'}</span>
-              )}
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
   );
+}
+
+function results_index(total: number, i: number): string {
+  return String(total - i).padStart(3, '0');
 }

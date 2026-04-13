@@ -94,5 +94,5 @@ func main() {
 		}
 	})
 
-	router.Run(cfg.Port)
+	router.Run(":" + cfg.Port)
 }

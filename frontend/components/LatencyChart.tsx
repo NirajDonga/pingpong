@@ -18,12 +18,12 @@ function ChartTooltip({ active, payload }: any) {
           <span className="text-white text-xs font-mono font-semibold ml-auto pl-4">{p.value}ms</span>
         </div>
       ))}
-      {data?.metrics && (
+      {data?._raw && (
         <div className="mt-2 pt-2 border-t border-neutral-700/50 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] font-mono text-neutral-500">
-          <span>DNS {data.metrics.dnsMs}ms</span>
-          <span>TCP {data.metrics.tcpMs}ms</span>
-          <span>TLS {data.metrics.tlsMs}ms</span>
-          <span>TTFB {data.metrics.ttfbMs}ms</span>
+          <span>DNS {data._raw.dnsMs}ms</span>
+          <span>TCP {data._raw.connMs}ms</span>
+          <span>TLS {data._raw.tlsHandshakeMs}ms</span>
+          <span>TTFB {data._raw.serverMs}ms</span>
         </div>
       )}
     </div>
@@ -45,12 +45,13 @@ export default function LatencyChart({ data }: { data: PingResult[] }) {
     return () => obs.disconnect();
   }, []);
 
-  const workers = useMemo(() => Array.from(new Set(data.map(d => d.workerId))), [data]);
+  const workers = useMemo(() => Array.from(new Set(data.map(d => d.workerName))), [data]);
 
   const chartData = useMemo(() => {
     return [...data].reverse().map((r, i) => {
-      const point: any = { index: i, worker: r.workerId, metrics: r.metrics };
-      point[r.workerId] = r.success ? r.metrics.totalMs : null;
+      const isSuccess = !r.error;
+      const point: any = { index: i, worker: r.workerName, _raw: r };
+      point[r.workerName] = isSuccess ? r.totalMs : null;
       return point;
     });
   }, [data]);

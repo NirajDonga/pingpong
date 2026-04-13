@@ -28,44 +28,30 @@ export default function PingDashboard() {
 
     const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/$/, '');
     const wsBaseUrl = baseUrl.replace(/^http/, 'ws');
-    const url = new URL(`${wsBaseUrl}/api/ws`);
+    const url = new URL(`${wsBaseUrl}/api/ping`);
     url.searchParams.append('target', finalUrl);
 
     const socket = new WebSocket(url.toString());
     socketRef.current = socket;
-    let completed = false;
 
     socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.status === 'completed') {
-        completed = true;
-        setStatus('completed');
-        socket.close();
-        return;
+      try {
+        const data: PingResult = JSON.parse(event.data);
+        setResults((prev) => {
+          const newResults = [data, ...prev];
+          return newResults.length > 500 ? newResults.slice(0, 500) : newResults;
+        });
+      } catch (_e) {
+        // Ignore malformed messages
       }
-
-      if (data.status === 'error') {
-        setStatus('error');
-        socket.close();
-        return;
-      }
-
-      setResults((prev) => {
-        const newResults = [data, ...prev];
-        return newResults.length > 500 ? newResults.slice(0, 500) : newResults;
-      });
     };
 
     socket.onerror = () => {
-      if (!completed) {
-        setStatus('error');
-      }
+      setStatus('error');
     };
 
     socket.onclose = () => {
-      if (!completed) {
-        setStatus((prev) => (prev === 'completed' ? 'completed' : 'error'));
-      }
+      setStatus((prev) => (prev === 'connected' ? 'completed' : prev));
     };
   };
 
@@ -80,14 +66,14 @@ export default function PingDashboard() {
     return () => socketRef.current?.close();
   }, []);
 
-  const uniqueWorkers = useMemo(() => Array.from(new Set(results.map(r => r.workerId))), [results]);
+  const uniqueWorkers = useMemo(() => Array.from(new Set(results.map(r => r.workerName))), [results]);
 
   const stats = useMemo(() => {
     const total = results.length;
-    const successful = results.filter(r => r.success);
+    const successful = results.filter(r => !r.error);
     const rate = total === 0 ? 100 : (successful.length / total) * 100;
-    const avg = successful.length === 0 ? 0 : successful.reduce((s, r) => s + r.metrics.totalMs, 0) / successful.length;
-    const last = successful.length > 0 ? successful[0].metrics.totalMs : 0;
+    const avg = successful.length === 0 ? 0 : successful.reduce((s, r) => s + r.totalMs, 0) / successful.length;
+    const last = successful.length > 0 ? successful[0].totalMs : 0;
     return { total, rate, avg, last };
   }, [results]);
 
@@ -190,13 +176,13 @@ export default function PingDashboard() {
           <h2 className="text-sm font-medium text-white mb-3">Workers</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8">
             {uniqueWorkers.length === 0 ? (
-              <LogViewer workerId="Waiting for workers…" logs={[]} />
+              <LogViewer workerName="Waiting for workers…" logs={[]} />
             ) : (
               uniqueWorkers.map(worker => (
                 <LogViewer
                   key={worker}
-                  workerId={worker}
-                  logs={results.filter(r => r.workerId === worker)}
+                  workerName={worker}
+                  logs={results.filter(r => r.workerName === worker)}
                 />
               ))
             )}
