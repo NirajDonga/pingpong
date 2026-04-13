@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "3001:3001"
+      # Exposing 4222 so your remote workers can hit the NATS broker over the internet!
+      - "4222:4222"
+    environment:
+      - PORT=3001
+      - CORS_ORIGIN=https://your-vercel-domain.vercel.app # Update this with your Vercel URL
+    restart: unless-stopped

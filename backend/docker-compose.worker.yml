@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      # Change this to the PUBLIC IP or domain of the machine running your API!
+      - NATS_URL=nats://YOUR_API_IP_ADDRESS:4222
+      - WORKER_NAME=worker-${REGION:-unknown}
+    restart: unless-stopped
