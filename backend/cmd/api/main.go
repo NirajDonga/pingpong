@@ -61,10 +61,11 @@ func main() {
 
 		sessionID := fmt.Sprintf("req_%d", time.Now().UnixMilli())
 
+		runDuration := 60
 		content := shared.RequstTopic{
 			SessionID:       sessionID,
 			TargetURL:       target,
-			DurationSeconds: 60,
+			DurationSeconds: runDuration,
 		}
 		contentBytes, err := json.Marshal(content)
 		if err != nil {
@@ -85,6 +86,19 @@ func main() {
 
 		nc.Publish("start", contentBytes)
 
+		done := make(chan struct{})
+		go func() {
+			select {
+			case <-time.After(time.Duration(runDuration)*time.Second + 2*time.Second):
+				message := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "session completed")
+				if err := conn.WriteControl(websocket.CloseMessage, message, time.Now().Add(time.Second)); err != nil {
+					log.Printf("Failed to close websocket for session %s: %v", sessionID, err)
+				}
+				conn.Close()
+			case <-done:
+			}
+		}()
+
 		for {
 			_, _, readErr := conn.ReadMessage()
 			if readErr != nil {
@@ -92,6 +106,7 @@ func main() {
 				break
 			}
 		}
+		close(done)
 	})
 
 	router.Run(":" + cfg.Port)

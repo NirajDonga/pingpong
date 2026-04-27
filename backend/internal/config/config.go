@@ -39,7 +39,6 @@ func LoadApiConfig() *ApiConfig {
 	load()
 	return &ApiConfig{
 		Port:       loadFromOS("PORT"),
-		NATSUrl:    loadFromOS("NATS_URL"),
 		CORSOrigin: loadFromOS("CORS_ORIGIN"),
 	}
 }
