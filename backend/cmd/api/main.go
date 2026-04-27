@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/NirajDonga/pingpong/backend/internal/config"
@@ -49,6 +51,10 @@ func main() {
 		target := c.Query("target")
 		if target == "" {
 			c.String(http.StatusBadRequest, "Bad Request: 'target' parameter is required")
+			return
+		}
+		if !isTargetAllowed(target) {
+			c.String(http.StatusBadRequest, "Bad Request: target is not allowed")
 			return
 		}
 
@@ -110,4 +116,27 @@ func main() {
 	})
 
 	router.Run(":" + cfg.Port)
+}
+
+func isTargetAllowed(rawURL string) bool {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return false
+	}
+
+	host := strings.ToLower(parsed.Hostname())
+	if host == "" {
+		return false
+	}
+
+	return host != "localhost" &&
+		host != "127.0.0.1" &&
+		host != "0.0.0.0" &&
+		host != "::1" &&
+		!strings.HasSuffix(host, ".svc") &&
+		!strings.HasSuffix(host, ".cluster.local")
 }
