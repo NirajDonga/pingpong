@@ -21,7 +21,7 @@ func main() {
 		log.Fatalf("config load: %v", err)
 	}
 
-	db, err := database.Connect(context.Background(), cfg.PostgresDSN)
+	db, err := database.Connect(context.Background(), cfg.PostgresURL)
 	if err != nil {
 		log.Fatalf("postgres connect: %v", err)
 	}

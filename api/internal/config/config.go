@@ -7,19 +7,19 @@ import (
 
 type Config struct {
 	Port        string
-	PostgresDSN string
+	PostgresURL string
 	JWTSecret   string
 }
 
 func Load() (Config, error) {
 	cfg := Config{
 		Port:        envOrDefault("PORT", "3001"),
-		PostgresDSN: os.Getenv("POSTGRES_DSN"),
+		PostgresURL: os.Getenv("POSTGRES_URL"),
 		JWTSecret:   os.Getenv("JWT_SECRET"),
 	}
 
-	if cfg.PostgresDSN == "" {
-		return Config{}, errors.New("POSTGRES_DSN is required")
+	if cfg.PostgresURL == "" {
+		return Config{}, errors.New("POSTGRES_URL is required")
 	}
 	if cfg.JWTSecret == "" {
 		return Config{}, errors.New("JWT_SECRET is required")
