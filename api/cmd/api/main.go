@@ -10,6 +10,7 @@ import (
 	"github.com/NirajDonga/pingpong/api/internal/config"
 	"github.com/NirajDonga/pingpong/api/internal/database"
 	"github.com/NirajDonga/pingpong/api/internal/middleware"
+	"github.com/NirajDonga/pingpong/api/internal/monitor"
 	"github.com/NirajDonga/pingpong/api/internal/user"
 	"github.com/gin-gonic/gin"
 )
@@ -30,6 +31,9 @@ func main() {
 	userRepo := user.NewRepository(db)
 	userSvc := user.NewService(userRepo, authSvc)
 	userHandler := user.NewHandler(userSvc)
+	monitorRepo := monitor.NewRepository(db)
+	monitorSvc := monitor.NewService(monitorRepo)
+	monitorHandler := monitor.NewHandler(monitorSvc)
 
 	router := gin.Default()
 
@@ -38,16 +42,12 @@ func main() {
 	})
 
 	api := router.Group("/api")
-	{
-		api.POST("/register", userHandler.Register)
-		api.POST("/login", userHandler.Login)
-	}
 
 	protected := api.Group("")
 	protected.Use(middleware.Auth(authSvc))
-	{
-		protected.GET("/me", userHandler.Me)
-	}
+
+	user.RegisterRoutes(api, protected, userHandler)
+	monitor.RegisterRoutes(protected, monitorHandler)
 
 	log.Println("api service starting on :" + cfg.Port)
 
