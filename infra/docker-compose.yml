@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: pingpong-postgres
+    environment:
+      POSTGRES_USER: pingpong
+      POSTGRES_PASSWORD: pingpong
+      POSTGRES_DB: pingpong
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.4
+    container_name: pingpong-clickhouse
+    environment:
+      CLICKHOUSE_USER: pingpong
+      CLICKHOUSE_PASSWORD: pingpong
+      CLICKHOUSE_DB: pingpong
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+
+  nats:
+    image: nats:2.11-alpine
+    container_name: pingpong-nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+volumes:
+  postgres-data:
+  clickhouse-data:
