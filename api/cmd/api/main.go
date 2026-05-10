@@ -1,22 +1,57 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/NirajDonga/pingpong/api/internal/auth"
+	"github.com/NirajDonga/pingpong/api/internal/config"
+	"github.com/NirajDonga/pingpong/api/internal/database"
+	"github.com/NirajDonga/pingpong/api/internal/middleware"
+	"github.com/NirajDonga/pingpong/api/internal/user"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("config load: %v", err)
+	}
+
+	db, err := database.Connect(context.Background(), cfg.PostgresDSN)
+	if err != nil {
+		log.Fatalf("postgres connect: %v", err)
+	}
+	defer db.Close()
+
+	authSvc := auth.NewService(cfg.JWTSecret, 24*time.Hour)
+	userRepo := user.NewRepository(db)
+	userSvc := user.NewService(userRepo, authSvc)
+	userHandler := user.NewHandler(userSvc)
+
 	router := gin.Default()
 
 	router.GET("/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "api healthy")
 	})
 
-	log.Println("api service starting on :3001")
+	api := router.Group("/api")
+	{
+		api.POST("/register", userHandler.Register)
+		api.POST("/login", userHandler.Login)
+	}
 
-	if err := router.Run(":3001"); err != nil {
+	protected := api.Group("")
+	protected.Use(middleware.Auth(authSvc))
+	{
+		protected.GET("/me", userHandler.Me)
+	}
+
+	log.Println("api service starting on :" + cfg.Port)
+
+	if err := router.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("api service failed: %v", err)
 	}
 }
