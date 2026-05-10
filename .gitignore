@@ -1,0 +1,56 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+.envrc
+!.env.example
+!api/.env.example
+!scheduler/.env.example
+!worker/.env.example
+
+# Go build output
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+bin/
+build/
+dist/
+
+# Go dependencies/cache
+vendor/
+GOMODCACHE/
+
+# Test and coverage output
+coverage.out
+*.cover
+
+# Logs
+*.log
+
+# Node/frontend
+node_modules/
+.next/
+out/
+.npm/
+.pnpm-store/
+yarn-error.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# IDE/editor
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp/swap files
+*.swp
+*.swo
+*.tmp
