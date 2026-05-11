@@ -136,8 +136,8 @@ func validateInput(name string, rawURL string, intervalSeconds int, timeoutSecon
 	if strings.TrimSpace(name) == "" {
 		return errors.New("name is required")
 	}
-	if !validURL(rawURL) {
-		return errors.New("valid http or https url is required")
+	if !isMonitorURLAllowed(rawURL) {
+		return errors.New("valid public http or https url is required")
 	}
 	if intervalSeconds < 30 {
 		return errors.New("interval_seconds must be at least 30")
@@ -155,7 +155,7 @@ func validateInput(name string, rawURL string, intervalSeconds int, timeoutSecon
 	return nil
 }
 
-func validURL(rawURL string) bool {
+func isMonitorURLAllowed(rawURL string) bool {
 	parsed, err := url.Parse(strings.TrimSpace(rawURL))
 	if err != nil {
 		return false
@@ -165,5 +165,15 @@ func validURL(rawURL string) bool {
 		return false
 	}
 
-	return parsed.Host != ""
+	host := strings.ToLower(parsed.Hostname())
+	if host == "" {
+		return false
+	}
+
+	return host != "localhost" &&
+		host != "127.0.0.1" &&
+		host != "0.0.0.0" &&
+		host != "::1" &&
+		!strings.HasSuffix(host, ".svc") &&
+		!strings.HasSuffix(host, ".cluster.local")
 }
