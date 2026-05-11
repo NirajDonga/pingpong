@@ -27,6 +27,10 @@ func main() {
 	}
 	defer db.Close()
 
+	if err := database.PingClickHouse(context.Background(), cfg.ClickHouseURL); err != nil {
+		log.Fatalf("clickhouse connect: %v", err)
+	}
+
 	authSvc := auth.NewService(cfg.JWTSecret, 24*time.Hour)
 	userRepo := user.NewRepository(db)
 	userSvc := user.NewService(userRepo, authSvc)
