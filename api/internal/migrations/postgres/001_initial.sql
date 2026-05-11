@@ -23,3 +23,16 @@ CREATE TABLE monitors (
 
 CREATE INDEX idx_monitors_user_id ON monitors(user_id);
 CREATE INDEX idx_monitors_due ON monitors(enabled, next_check_at);
+
+CREATE TABLE incidents (
+    id UUID PRIMARY KEY,
+    monitor_id UUID NOT NULL REFERENCES monitors(id) ON DELETE CASCADE,
+    started_at TIMESTAMPTZ NOT NULL,
+    ended_at TIMESTAMPTZ,
+    status TEXT NOT NULL,
+    reason TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_incidents_monitor_id ON incidents(monitor_id);
+CREATE INDEX idx_incidents_status ON incidents(status);
