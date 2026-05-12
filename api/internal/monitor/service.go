@@ -3,6 +3,7 @@ package monitor
 import (
 	"context"
 	"errors"
+	"net"
 	"net/url"
 	"strings"
 	"time"
@@ -168,6 +169,15 @@ func isMonitorURLAllowed(rawURL string) bool {
 	host := strings.ToLower(parsed.Hostname())
 	if host == "" {
 		return false
+	}
+
+	if ip := net.ParseIP(host); ip != nil {
+		return !ip.IsLoopback() &&
+			!ip.IsPrivate() &&
+			!ip.IsLinkLocalUnicast() &&
+			!ip.IsLinkLocalMulticast() &&
+			!ip.IsMulticast() &&
+			!ip.IsUnspecified()
 	}
 
 	return host != "localhost" &&
