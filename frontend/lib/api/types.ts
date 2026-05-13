@@ -3,11 +3,6 @@ export type User = {
   id: string;
 };
 
-export type AuthResponse = {
-  token: string;
-  user: User;
-};
-
 export type Monitor = {
   id: string;
   user_id: string;

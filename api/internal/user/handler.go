@@ -2,16 +2,22 @@ package user
 
 import (
 	"net/http"
+	"time"
 
+	"github.com/NirajDonga/pingpong/api/internal/auth"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	svc Service
+	svc          Service
+	cookieSecure bool
 }
 
-func NewHandler(svc Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc Service, cookieSecure bool) *Handler {
+	return &Handler{
+		svc:          svc,
+		cookieSecure: cookieSecure,
+	}
 }
 
 func (h *Handler) Register(c *gin.Context) {
@@ -21,7 +27,7 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	user, err := h.svc.Register(c.Request.Context(), input)
+	result, err := h.svc.Register(c.Request.Context(), input)
 	if err != nil {
 		if err.Error() == "email already registered" {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
@@ -31,7 +37,8 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, user)
+	h.setSessionCookie(c, result.Token)
+	c.JSON(http.StatusCreated, result.User)
 }
 
 func (h *Handler) Login(c *gin.Context) {
@@ -47,7 +54,14 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, result)
+	h.setSessionCookie(c, result.Token)
+	c.JSON(http.StatusOK, result.User)
+}
+
+func (h *Handler) Logout(c *gin.Context) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(auth.SessionCookieName, "", -1, "/", "", h.cookieSecure, true)
+	c.Status(http.StatusNoContent)
 }
 
 func (h *Handler) Me(c *gin.Context) {
@@ -58,4 +72,17 @@ func (h *Handler) Me(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"id": userID})
+}
+
+func (h *Handler) setSessionCookie(c *gin.Context, token string) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(
+		auth.SessionCookieName,
+		token,
+		int((24 * time.Hour).Seconds()),
+		"/",
+		"",
+		h.cookieSecure,
+		true,
+	)
 }

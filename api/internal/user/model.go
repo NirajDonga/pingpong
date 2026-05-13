@@ -29,6 +29,6 @@ type UserResponse struct {
 }
 
 type AuthResponse struct {
-	Token string       `json:"token"`
+	Token string       `json:"-"`
 	User  UserResponse `json:"user"`
 }

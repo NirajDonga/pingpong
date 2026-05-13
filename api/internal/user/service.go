@@ -13,7 +13,7 @@ import (
 )
 
 type Service interface {
-	Register(ctx context.Context, input RegisterRequest) (UserResponse, error)
+	Register(ctx context.Context, input RegisterRequest) (AuthResponse, error)
 	Login(ctx context.Context, input LoginRequest) (AuthResponse, error)
 }
 
@@ -29,23 +29,23 @@ func NewService(repo Repository, authSvc auth.Service) Service {
 	}
 }
 
-func (s *service) Register(ctx context.Context, input RegisterRequest) (UserResponse, error) {
+func (s *service) Register(ctx context.Context, input RegisterRequest) (AuthResponse, error) {
 	email := strings.TrimSpace(strings.ToLower(input.Email))
 	if email == "" || input.Password == "" {
-		return UserResponse{}, errors.New("missing required fields")
+		return AuthResponse{}, errors.New("missing required fields")
 	}
 
 	existing, err := s.repo.FindByEmail(ctx, email)
 	if err == nil && existing != nil {
-		return UserResponse{}, errors.New("email already registered")
+		return AuthResponse{}, errors.New("email already registered")
 	}
 	if err != nil && !errors.Is(err, ErrNotFound) {
-		return UserResponse{}, err
+		return AuthResponse{}, err
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return UserResponse{}, fmt.Errorf("hash password: %w", err)
+		return AuthResponse{}, fmt.Errorf("hash password: %w", err)
 	}
 
 	u := User{
@@ -57,12 +57,20 @@ func (s *service) Register(ctx context.Context, input RegisterRequest) (UserResp
 
 	id, err := s.repo.CreateUser(ctx, u)
 	if err != nil {
-		return UserResponse{}, err
+		return AuthResponse{}, err
 	}
 
-	return UserResponse{
-		ID:    id.String(),
-		Email: u.Email,
+	token, err := s.auth.GenerateToken(id.String())
+	if err != nil {
+		return AuthResponse{}, fmt.Errorf("generate token: %w", err)
+	}
+
+	return AuthResponse{
+		Token: token,
+		User: UserResponse{
+			ID:    id.String(),
+			Email: u.Email,
+		},
 	}, nil
 }
 

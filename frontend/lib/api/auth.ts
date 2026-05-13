@@ -1,5 +1,5 @@
-import { api, setToken } from "@/lib/api/client";
-import type { AuthResponse } from "@/lib/api/types";
+import { api } from "@/lib/api/client";
+import type { User } from "@/lib/api/types";
 
 type AuthInput = {
   email: string;
@@ -7,19 +7,21 @@ type AuthInput = {
 };
 
 export async function login(input: AuthInput) {
-  const response = await api<AuthResponse>("/login", {
+  return api<User>("/login", {
     body: input,
     method: "POST",
   });
-  setToken(response.token);
-  return response;
 }
 
 export async function register(input: AuthInput) {
-  const response = await api<AuthResponse>("/register", {
+  return api<User>("/register", {
     body: input,
     method: "POST",
   });
-  setToken(response.token);
-  return response;
+}
+
+export async function logout() {
+  return api<void>("/logout", {
+    method: "POST",
+  });
 }

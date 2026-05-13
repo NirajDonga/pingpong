@@ -43,7 +43,7 @@ func main() {
 	authSvc := auth.NewService(cfg.JWTSecret, 24*time.Hour)
 	userRepo := user.NewRepository(db)
 	userSvc := user.NewService(userRepo, authSvc)
-	userHandler := user.NewHandler(userSvc)
+	userHandler := user.NewHandler(userSvc, cfg.CookieSecure)
 	monitorRepo := monitor.NewRepository(db)
 	monitorSvc := monitor.NewService(monitorRepo)
 	monitorHandler := monitor.NewHandler(monitorSvc)

@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"os"
+	"strconv"
 )
 
 type Config struct {
@@ -12,6 +13,7 @@ type Config struct {
 	NATSURL       string
 	JWTSecret     string
 	WebOrigin     string
+	CookieSecure  bool
 }
 
 func Load() (Config, error) {
@@ -22,6 +24,7 @@ func Load() (Config, error) {
 		NATSURL:       os.Getenv("NATS_URL"),
 		JWTSecret:     os.Getenv("JWT_SECRET"),
 		WebOrigin:     envOrDefault("WEB_ORIGIN", "http://localhost:3000"),
+		CookieSecure:  envBoolOrDefault("COOKIE_SECURE", false),
 	}
 
 	if cfg.PostgresURL == "" {
@@ -38,6 +41,20 @@ func Load() (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func envBoolOrDefault(key string, fallback bool) bool {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+
+	return parsed
 }
 
 func envOrDefault(key string, fallback string) string {
