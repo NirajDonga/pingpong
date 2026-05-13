@@ -194,7 +194,7 @@ func (r *repository) Delete(ctx context.Context, userID uuid.UUID, monitorID uui
 }
 
 func (r *repository) ApplyCheckResult(ctx context.Context, monitorID uuid.UUID, success bool) error {
-	query := `
+	updateQuery := `
 		UPDATE monitors
 		SET consecutive_failures = CASE
 				WHEN $2 THEN 0
@@ -210,17 +210,71 @@ func (r *repository) ApplyCheckResult(ctx context.Context, monitorID uuid.UUID, 
 				ELSE current_status
 			END
 		WHERE id = $1
+		RETURNING current_status
 	`
 
 	opCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	tag, err := r.db.Exec(opCtx, query, monitorID, success)
+	tx, err := r.db.Begin(opCtx)
 	if err != nil {
 		return err
 	}
-	if tag.RowsAffected() == 0 {
-		return ErrNotFound
+	defer tx.Rollback(opCtx)
+
+	var previousStatus string
+	err = tx.QueryRow(opCtx, `SELECT current_status FROM monitors WHERE id = $1 FOR UPDATE`, monitorID).Scan(&previousStatus)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+
+	var currentStatus string
+	err = tx.QueryRow(opCtx, updateQuery, monitorID, success).Scan(&currentStatus)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+
+	if previousStatus != "down" && currentStatus == "down" {
+		_, err = tx.Exec(
+			opCtx,
+			`
+				INSERT INTO incidents (id, monitor_id, started_at, status, reason)
+				VALUES ($1, $2, NOW(), 'open', 'monitor marked down after consecutive failures')
+			`,
+			uuid.New(),
+			monitorID,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	if previousStatus == "down" && currentStatus == "up" {
+		_, err = tx.Exec(
+			opCtx,
+			`
+				UPDATE incidents
+				SET ended_at = NOW(),
+					status = 'resolved'
+				WHERE monitor_id = $1
+					AND status = 'open'
+					AND ended_at IS NULL
+			`,
+			monitorID,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := tx.Commit(opCtx); err != nil {
+		return err
 	}
 
 	return nil

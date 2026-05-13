@@ -9,6 +9,7 @@ import (
 	"github.com/NirajDonga/pingpong/api/internal/auth"
 	"github.com/NirajDonga/pingpong/api/internal/config"
 	"github.com/NirajDonga/pingpong/api/internal/database"
+	"github.com/NirajDonga/pingpong/api/internal/incident"
 	"github.com/NirajDonga/pingpong/api/internal/middleware"
 	"github.com/NirajDonga/pingpong/api/internal/monitor"
 	"github.com/NirajDonga/pingpong/api/internal/nats"
@@ -49,6 +50,9 @@ func main() {
 	resultRepo := result.NewClickHouseRepository(cfg.ClickHouseURL)
 	resultSvc := result.NewService(resultRepo, monitorRepo)
 	resultHandler := result.NewHandler(monitorSvc, resultSvc)
+	incidentRepo := incident.NewRepository(db)
+	incidentSvc := incident.NewService(incidentRepo)
+	incidentHandler := incident.NewHandler(incidentSvc)
 
 	_, err = natsClient.SubscribeCheckResults(func(checkResult result.CheckResult) {
 		go func() {
@@ -78,6 +82,7 @@ func main() {
 	user.RegisterRoutes(api, protected, userHandler)
 	monitor.RegisterRoutes(protected, monitorHandler)
 	result.RegisterRoutes(protected, resultHandler)
+	incident.RegisterRoutes(protected, incidentHandler)
 
 	log.Println("api service starting on :" + cfg.Port)
 
