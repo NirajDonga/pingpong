@@ -1,0 +1,54 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Field, Input } from "@/components/ui/field";
+import { useLogin } from "@/lib/queries/use-auth";
+
+export function LoginForm() {
+  const login = useLogin();
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    login.mutate(
+      { email, password },
+      {
+        onSuccess: () => {
+          router.push("/monitors");
+        },
+      },
+    );
+  }
+
+  return (
+    <form className="mt-8 grid gap-4" onSubmit={onSubmit}>
+      <Field label="Email">
+        <Input
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@example.com"
+          type="email"
+          value={email}
+        />
+      </Field>
+      <Field label="Password">
+        <Input
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Password"
+          type="password"
+          value={password}
+        />
+      </Field>
+      {login.error ? (
+        <p className="text-sm text-red-300">{login.error.message}</p>
+      ) : null}
+      <Button className="mt-2 w-full" disabled={login.isPending} type="submit">
+        {login.isPending ? "Signing in..." : "Sign in"}
+      </Button>
+    </form>
+  );
+}

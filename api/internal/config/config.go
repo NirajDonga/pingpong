@@ -11,6 +11,7 @@ type Config struct {
 	ClickHouseURL string
 	NATSURL       string
 	JWTSecret     string
+	WebOrigin     string
 }
 
 func Load() (Config, error) {
@@ -20,6 +21,7 @@ func Load() (Config, error) {
 		ClickHouseURL: os.Getenv("CLICKHOUSE_URL"),
 		NATSURL:       os.Getenv("NATS_URL"),
 		JWTSecret:     os.Getenv("JWT_SECRET"),
+		WebOrigin:     envOrDefault("WEB_ORIGIN", "http://localhost:3000"),
 	}
 
 	if cfg.PostgresURL == "" {

@@ -69,6 +69,7 @@ func main() {
 	}
 
 	router := gin.Default()
+	router.Use(middleware.CORS(cfg.WebOrigin))
 
 	router.GET("/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "api healthy")

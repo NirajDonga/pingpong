@@ -1,14 +1,29 @@
+import { AppShell } from "@/components/layout/app-shell";
+import { ButtonLink } from "@/components/ui/button";
+
 export default function Home() {
   return (
-    <main className="min-h-screen">
-      <section className="mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-6 py-16">
-        <p className="text-sm font-medium uppercase tracking-wider text-slate-500">
-          PingPong Web
-        </p>
-        <h1 className="mt-4 text-4xl font-semibold text-slate-950">
-          Web skeleton ready.
-        </h1>
+    <AppShell>
+      <section className="flex min-h-[calc(100vh-81px)] items-center">
+        <div className="max-w-2xl">
+          <p className="text-sm font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
+            PingPong Web
+          </p>
+          <h1 className="mt-5 text-4xl font-semibold leading-tight text-white sm:text-5xl">
+            Clean foundation for the monitoring dashboard.
+          </h1>
+          <p className="mt-5 max-w-xl text-base leading-7 text-zinc-400">
+            The frontend is ready for the product screens: auth, monitors,
+            checks, incidents, and status views.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <ButtonLink href="/monitors">Open monitors</ButtonLink>
+            <ButtonLink href="/incidents" variant="secondary">
+              View incidents
+            </ButtonLink>
+          </div>
+        </div>
       </section>
-    </main>
+    </AppShell>
   );
 }
