@@ -12,12 +12,20 @@ type Repository interface {
 	History(ctx context.Context, monitorID uuid.UUID, limit int) ([]CheckResult, error)
 }
 
-type Service struct {
-	repo Repository
+type StatusUpdater interface {
+	ApplyCheckResult(ctx context.Context, monitorID uuid.UUID, success bool) error
 }
 
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+type Service struct {
+	repo          Repository
+	statusUpdater StatusUpdater
+}
+
+func NewService(repo Repository, statusUpdater StatusUpdater) *Service {
+	return &Service{
+		repo:          repo,
+		statusUpdater: statusUpdater,
+	}
 }
 
 func (s *Service) Process(ctx context.Context, result CheckResult) error {
@@ -25,7 +33,16 @@ func (s *Service) Process(ctx context.Context, result CheckResult) error {
 		return err
 	}
 
-	return s.repo.Insert(ctx, result)
+	if err := s.repo.Insert(ctx, result); err != nil {
+		return err
+	}
+
+	monitorID, err := uuid.Parse(result.MonitorID)
+	if err != nil {
+		return errors.New("invalid monitorId")
+	}
+
+	return s.statusUpdater.ApplyCheckResult(ctx, monitorID, result.Success)
 }
 
 func (s *Service) History(ctx context.Context, monitorID string, limit int) ([]CheckResult, error) {

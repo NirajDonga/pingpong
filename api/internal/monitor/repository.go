@@ -25,6 +25,7 @@ type Repository interface {
 	Update(ctx context.Context, m Monitor) (*Monitor, error)
 	SetEnabled(ctx context.Context, userID uuid.UUID, monitorID uuid.UUID, enabled bool) (*Monitor, error)
 	Delete(ctx context.Context, userID uuid.UUID, monitorID uuid.UUID) error
+	ApplyCheckResult(ctx context.Context, monitorID uuid.UUID, success bool) error
 }
 
 type repository struct {
@@ -182,6 +183,39 @@ func (r *repository) Delete(ctx context.Context, userID uuid.UUID, monitorID uui
 	defer cancel()
 
 	tag, err := r.db.Exec(opCtx, query, userID, monitorID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+func (r *repository) ApplyCheckResult(ctx context.Context, monitorID uuid.UUID, success bool) error {
+	query := `
+		UPDATE monitors
+		SET consecutive_failures = CASE
+				WHEN $2 THEN 0
+				ELSE consecutive_failures + 1
+			END,
+			consecutive_successes = CASE
+				WHEN $2 THEN consecutive_successes + 1
+				ELSE 0
+			END,
+			current_status = CASE
+				WHEN $2 AND consecutive_successes + 1 >= 2 THEN 'up'
+				WHEN NOT $2 AND consecutive_failures + 1 >= 3 THEN 'down'
+				ELSE current_status
+			END
+		WHERE id = $1
+	`
+
+	opCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	tag, err := r.db.Exec(opCtx, query, monitorID, success)
 	if err != nil {
 		return err
 	}

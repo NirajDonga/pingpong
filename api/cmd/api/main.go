@@ -47,7 +47,7 @@ func main() {
 	monitorSvc := monitor.NewService(monitorRepo)
 	monitorHandler := monitor.NewHandler(monitorSvc)
 	resultRepo := result.NewClickHouseRepository(cfg.ClickHouseURL)
-	resultSvc := result.NewService(resultRepo)
+	resultSvc := result.NewService(resultRepo, monitorRepo)
 	resultHandler := result.NewHandler(monitorSvc, resultSvc)
 
 	_, err = natsClient.SubscribeCheckResults(func(checkResult result.CheckResult) {
