@@ -9,6 +9,7 @@ type Config struct {
 	Port          string
 	PostgresURL   string
 	ClickHouseURL string
+	NATSURL       string
 	JWTSecret     string
 }
 
@@ -17,6 +18,7 @@ func Load() (Config, error) {
 		Port:          envOrDefault("PORT", "3001"),
 		PostgresURL:   os.Getenv("POSTGRES_URL"),
 		ClickHouseURL: os.Getenv("CLICKHOUSE_URL"),
+		NATSURL:       os.Getenv("NATS_URL"),
 		JWTSecret:     os.Getenv("JWT_SECRET"),
 	}
 
@@ -25,6 +27,9 @@ func Load() (Config, error) {
 	}
 	if cfg.ClickHouseURL == "" {
 		return Config{}, errors.New("CLICKHOUSE_URL is required")
+	}
+	if cfg.NATSURL == "" {
+		return Config{}, errors.New("NATS_URL is required")
 	}
 	if cfg.JWTSecret == "" {
 		return Config{}, errors.New("JWT_SECRET is required")

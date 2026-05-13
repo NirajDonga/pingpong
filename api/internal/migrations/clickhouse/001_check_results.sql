@@ -4,7 +4,12 @@ CREATE TABLE check_results (
     success Bool,
     status_code UInt16,
     response_time_ms UInt32,
-    error String
+    dns_ms UInt32,
+    tcp_ms UInt32,
+    tls_ms UInt32,
+    ttfb_ms UInt32,
+    error String,
+    worker_name String
 )
 ENGINE = MergeTree
 PARTITION BY toYYYYMM(checked_at)

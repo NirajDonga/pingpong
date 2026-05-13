@@ -11,6 +11,8 @@ import (
 	"github.com/NirajDonga/pingpong/api/internal/database"
 	"github.com/NirajDonga/pingpong/api/internal/middleware"
 	"github.com/NirajDonga/pingpong/api/internal/monitor"
+	"github.com/NirajDonga/pingpong/api/internal/nats"
+	"github.com/NirajDonga/pingpong/api/internal/result"
 	"github.com/NirajDonga/pingpong/api/internal/user"
 	"github.com/gin-gonic/gin"
 )
@@ -31,6 +33,12 @@ func main() {
 		log.Fatalf("clickhouse connect: %v", err)
 	}
 
+	natsClient, err := nats.NewClient(cfg.NATSURL)
+	if err != nil {
+		log.Fatalf("nats connect: %v", err)
+	}
+	defer natsClient.Close()
+
 	authSvc := auth.NewService(cfg.JWTSecret, 24*time.Hour)
 	userRepo := user.NewRepository(db)
 	userSvc := user.NewService(userRepo, authSvc)
@@ -38,6 +46,23 @@ func main() {
 	monitorRepo := monitor.NewRepository(db)
 	monitorSvc := monitor.NewService(monitorRepo)
 	monitorHandler := monitor.NewHandler(monitorSvc)
+	resultRepo := result.NewClickHouseRepository(cfg.ClickHouseURL)
+	resultSvc := result.NewService(resultRepo)
+	resultHandler := result.NewHandler(monitorSvc, resultSvc)
+
+	_, err = natsClient.SubscribeCheckResults(func(checkResult result.CheckResult) {
+		go func() {
+			if err := resultSvc.Process(context.Background(), checkResult); err != nil {
+				log.Printf("failed to process check result for monitor %s: %v", checkResult.MonitorID, err)
+				return
+			}
+
+			log.Printf("stored check result for monitor %s success=%t status=%d", checkResult.MonitorID, checkResult.Success, checkResult.StatusCode)
+		}()
+	})
+	if err != nil {
+		log.Fatalf("check result subscription: %v", err)
+	}
 
 	router := gin.Default()
 
@@ -52,6 +77,7 @@ func main() {
 
 	user.RegisterRoutes(api, protected, userHandler)
 	monitor.RegisterRoutes(protected, monitorHandler)
+	result.RegisterRoutes(protected, resultHandler)
 
 	log.Println("api service starting on :" + cfg.Port)
 
