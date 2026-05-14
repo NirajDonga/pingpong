@@ -1,15 +1,45 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { login, logout, register } from "@/lib/api/auth";
+import { currentUser, login, logout, register } from "@/lib/api/auth";
+import { queryKeys } from "@/lib/queries/query-keys";
+
+export function useCurrentUser() {
+  return useQuery({
+    queryFn: currentUser,
+    queryKey: queryKeys.currentUser,
+    retry: false,
+  });
+}
 
 export function useLogin() {
-  return useMutation({ mutationFn: login });
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: login,
+    onSuccess: (user) => {
+      queryClient.setQueryData(queryKeys.currentUser, { id: user.id });
+    },
+  });
 }
 
 export function useRegister() {
-  return useMutation({ mutationFn: register });
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: register,
+    onSuccess: (user) => {
+      queryClient.setQueryData(queryKeys.currentUser, { id: user.id });
+    },
+  });
 }
 
 export function useLogout() {
-  return useMutation({ mutationFn: logout });
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.setQueryData(queryKeys.currentUser, null);
+    },
+  });
 }

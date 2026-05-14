@@ -1,7 +1,11 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { useCurrentUser, useLogout } from "@/lib/queries/use-auth";
 
 const navItems = [
   { label: "Monitors", href: "/monitors" },
@@ -14,6 +18,18 @@ type AppShellProps = {
 };
 
 export function AppShell({ children }: AppShellProps) {
+  const { data: user, isLoading } = useCurrentUser();
+  const logout = useLogout();
+  const router = useRouter();
+
+  function onLogout() {
+    logout.mutate(undefined, {
+      onSuccess: () => {
+        router.push("/login");
+      },
+    });
+  }
+
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <header className="border-b border-[var(--border)] bg-black">
@@ -32,9 +48,23 @@ export function AppShell({ children }: AppShellProps) {
               </Link>
             ))}
           </nav>
-          <ButtonLink href="/login" variant="secondary">
-            Sign in
-          </ButtonLink>
+          {isLoading ? (
+            <span className="h-10 w-20 rounded-md border border-zinc-800 bg-zinc-950" />
+          ) : user ? (
+            <div className="flex items-center gap-3">
+              <Button
+                disabled={logout.isPending}
+                onClick={onLogout}
+                variant="secondary"
+              >
+                Sign out
+              </Button>
+            </div>
+          ) : (
+            <ButtonLink href="/login" variant="secondary">
+              Sign in
+            </ButtonLink>
+          )}
         </div>
       </header>
       <div className="mx-auto w-full max-w-6xl px-6">{children}</div>

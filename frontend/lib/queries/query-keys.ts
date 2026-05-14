@@ -1,4 +1,5 @@
 export const queryKeys = {
+  currentUser: ["current-user"] as const,
   incidents: ["incidents"] as const,
   monitor: (id: string) => ["monitor", id] as const,
   monitorChecks: (id: string) => ["monitor", id, "checks"] as const,
