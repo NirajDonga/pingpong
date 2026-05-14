@@ -1,9 +1,11 @@
 package config
 
 import (
-	"errors"
+	"log"
 	"os"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -13,20 +15,21 @@ type Config struct {
 	TickEvery   time.Duration
 }
 
-func Load() (Config, error) {
-	cfg := Config{
-		PostgresURL: os.Getenv("POSTGRES_URL"),
-		NATSURL:     os.Getenv("NATS_URL"),
+func Load() Config {
+	_ = godotenv.Load()
+
+	return Config{
+		PostgresURL: mustGetEnv("POSTGRES_URL"),
+		NATSURL:     mustGetEnv("NATS_URL"),
 		BatchSize:   100,
 		TickEvery:   time.Second,
 	}
+}
 
-	if cfg.PostgresURL == "" {
-		return Config{}, errors.New("POSTGRES_URL is required")
+func mustGetEnv(key string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists || value == "" {
+		log.Fatalf("CRITICAL STARTUP ERROR: Environment variable '%s' is required but not set.", key)
 	}
-	if cfg.NATSURL == "" {
-		return Config{}, errors.New("NATS_URL is required")
-	}
-
-	return cfg, nil
+	return value
 }

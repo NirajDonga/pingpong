@@ -11,10 +11,7 @@ import (
 )
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("config load: %v", err)
-	}
+	cfg := config.Load()
 
 	db, err := database.Connect(context.Background(), cfg.PostgresURL)
 	if err != nil {

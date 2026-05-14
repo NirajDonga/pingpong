@@ -2,7 +2,10 @@ module github.com/NirajDonga/pingpong/worker
 
 go 1.25.6
 
-require github.com/nats-io/nats.go v1.52.0
+require (
+	github.com/joho/godotenv v1.5.1
+	github.com/nats-io/nats.go v1.52.0
+)
 
 require (
 	github.com/klauspost/compress v1.18.5 // indirect

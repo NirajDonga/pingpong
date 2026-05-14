@@ -1,9 +1,11 @@
 package config
 
 import (
-	"errors"
+	"log"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -16,51 +18,33 @@ type Config struct {
 	CookieSecure  bool
 }
 
-func Load() (Config, error) {
-	cfg := Config{
-		Port:          envOrDefault("PORT", "3001"),
-		PostgresURL:   os.Getenv("POSTGRES_URL"),
-		ClickHouseURL: os.Getenv("CLICKHOUSE_URL"),
-		NATSURL:       os.Getenv("NATS_URL"),
-		JWTSecret:     os.Getenv("JWT_SECRET"),
-		WebOrigin:     envOrDefault("WEB_ORIGIN", "http://localhost:3000"),
-		CookieSecure:  envBoolOrDefault("COOKIE_SECURE", false),
-	}
+func Load() Config {
+	_ = godotenv.Load()
 
-	if cfg.PostgresURL == "" {
-		return Config{}, errors.New("POSTGRES_URL is required")
+	return Config{
+		Port:          mustGetEnv("PORT"),
+		PostgresURL:   mustGetEnv("POSTGRES_URL"),
+		ClickHouseURL: mustGetEnv("CLICKHOUSE_URL"),
+		NATSURL:       mustGetEnv("NATS_URL"),
+		JWTSecret:     mustGetEnv("JWT_SECRET"),
+		WebOrigin:     mustGetEnv("WEB_ORIGIN"),
+		CookieSecure:  mustGetEnvBool("COOKIE_SECURE"),
 	}
-	if cfg.ClickHouseURL == "" {
-		return Config{}, errors.New("CLICKHOUSE_URL is required")
-	}
-	if cfg.NATSURL == "" {
-		return Config{}, errors.New("NATS_URL is required")
-	}
-	if cfg.JWTSecret == "" {
-		return Config{}, errors.New("JWT_SECRET is required")
-	}
-
-	return cfg, nil
 }
 
-func envBoolOrDefault(key string, fallback bool) bool {
-	value := os.Getenv(key)
-	if value == "" {
-		return fallback
-	}
-
-	parsed, err := strconv.ParseBool(value)
-	if err != nil {
-		return fallback
-	}
-
-	return parsed
-}
-
-func envOrDefault(key string, fallback string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return fallback
+func mustGetEnv(key string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists || value == "" {
+		log.Fatalf("CRITICAL STARTUP ERROR: Environment variable '%s' is required but not set.", key)
 	}
 	return value
+}
+
+func mustGetEnvBool(key string) bool {
+	value := mustGetEnv(key)
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		log.Fatalf("CRITICAL STARTUP ERROR: Environment variable '%s' must be a valid boolean.", key)
+	}
+	return parsed
 }
