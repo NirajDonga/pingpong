@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$`)
 
 type Service interface {
 	Register(ctx context.Context, input RegisterRequest) (AuthResponse, error)
@@ -33,6 +36,10 @@ func (s *service) Register(ctx context.Context, input RegisterRequest) (AuthResp
 	email := strings.TrimSpace(strings.ToLower(input.Email))
 	if email == "" || input.Password == "" {
 		return AuthResponse{}, errors.New("missing required fields")
+	}
+
+	if !emailRegex.MatchString(email) {
+		return AuthResponse{}, errors.New("invalid email format")
 	}
 
 	existing, err := s.repo.FindByEmail(ctx, email)
@@ -78,6 +85,10 @@ func (s *service) Login(ctx context.Context, input LoginRequest) (AuthResponse, 
 	email := strings.TrimSpace(strings.ToLower(input.Email))
 	if email == "" || input.Password == "" {
 		return AuthResponse{}, errors.New("missing credentials")
+	}
+
+	if !emailRegex.MatchString(email) {
+		return AuthResponse{}, errors.New("invalid credentials")
 	}
 
 	u, err := s.repo.FindByEmail(ctx, email)
