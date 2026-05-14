@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"time"
 )
@@ -12,19 +13,20 @@ type Config struct {
 	TickEvery   time.Duration
 }
 
-func Load() Config {
-	return Config{
-		PostgresURL: envOrDefault("POSTGRES_URL", "postgres://pingpong:pingpong@localhost:5432/pingpong?sslmode=disable"),
-		NATSURL:     envOrDefault("NATS_URL", "nats://localhost:4222"),
+func Load() (Config, error) {
+	cfg := Config{
+		PostgresURL: os.Getenv("POSTGRES_URL"),
+		NATSURL:     os.Getenv("NATS_URL"),
 		BatchSize:   100,
 		TickEvery:   time.Second,
 	}
-}
 
-func envOrDefault(key string, fallback string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return fallback
+	if cfg.PostgresURL == "" {
+		return Config{}, errors.New("POSTGRES_URL is required")
 	}
-	return value
+	if cfg.NATSURL == "" {
+		return Config{}, errors.New("NATS_URL is required")
+	}
+
+	return cfg, nil
 }
