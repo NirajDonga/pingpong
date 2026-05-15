@@ -13,7 +13,7 @@ export default async function MonitorDetailPage({
   const { id } = await params;
 
   return (
-    <AppShell>
+    <AppShell requireAuth>
       <PageHeader
         actions={
           <ButtonLink href="/monitors" variant="secondary">

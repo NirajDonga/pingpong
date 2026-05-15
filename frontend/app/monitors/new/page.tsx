@@ -5,7 +5,7 @@ import { Panel, PanelBody } from "@/components/ui/panel";
 
 export default function NewMonitorPage() {
   return (
-    <AppShell>
+    <AppShell requireAuth>
       <PageHeader
         description="Create one HTTP monitor with an interval, timeout, and expected status."
         eyebrow="Monitor setup"

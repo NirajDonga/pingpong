@@ -5,7 +5,7 @@ import { ButtonLink } from "@/components/ui/button";
 
 export default function MonitorsPage() {
   return (
-    <AppShell>
+    <AppShell requireAuth>
       <PageHeader
         actions={<ButtonLink href="/monitors/new">New monitor</ButtonLink>}
         description="Manage checks, intervals, ownership, and current status."

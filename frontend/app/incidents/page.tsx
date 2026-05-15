@@ -4,7 +4,7 @@ import { IncidentList } from "@/components/features/incidents/incident-list";
 
 export default function IncidentsPage() {
   return (
-    <AppShell>
+    <AppShell requireAuth>
       <PageHeader
         description="Review open downtime windows and resolved recovery periods."
         eyebrow="Reliability"

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -15,12 +16,19 @@ const navItems = [
 
 type AppShellProps = {
   children: ReactNode;
+  requireAuth?: boolean;
 };
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, requireAuth = false }: AppShellProps) {
   const { data: user, isLoading } = useCurrentUser();
   const logout = useLogout();
   const router = useRouter();
+
+  useEffect(() => {
+    if (requireAuth && !isLoading && !user) {
+      router.replace("/login");
+    }
+  }, [isLoading, requireAuth, router, user]);
 
   function onLogout() {
     logout.mutate(undefined, {
@@ -67,7 +75,9 @@ export function AppShell({ children }: AppShellProps) {
           )}
         </div>
       </header>
-      <div className="mx-auto w-full max-w-6xl px-6">{children}</div>
+      <div className="mx-auto w-full max-w-6xl px-6">
+        {requireAuth && (isLoading || !user) ? null : children}
+      </div>
     </main>
   );
 }
