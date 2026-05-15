@@ -34,7 +34,14 @@ type Checker struct {
 
 func New() *Checker {
 	return &Checker{
-		client: &http.Client{},
+		client: &http.Client{
+			Transport: &http.Transport{
+				DisableKeepAlives: true,
+			},
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
 	}
 }
 

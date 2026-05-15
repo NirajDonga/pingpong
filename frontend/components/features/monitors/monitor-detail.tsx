@@ -75,13 +75,17 @@ export function MonitorDetail({ id }: MonitorDetailProps) {
           ) : !checks.data?.length ? (
             <p className="text-sm text-zinc-500">No checks recorded yet.</p>
           ) : (
-            <table className="w-full min-w-[640px] text-left text-sm">
+            <table className="w-full min-w-[900px] text-left text-sm">
               <thead className="text-xs uppercase tracking-[0.16em] text-zinc-600">
                 <tr>
                   <th className="pb-3 font-medium">Time</th>
                   <th className="pb-3 font-medium">Result</th>
                   <th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Latency</th>
+                  <th className="pb-3 font-medium">Total</th>
+                  <th className="pb-3 font-medium">DNS</th>
+                  <th className="pb-3 font-medium">TCP</th>
+                  <th className="pb-3 font-medium">TLS</th>
+                  <th className="pb-3 font-medium">TTFB</th>
                   <th className="pb-3 font-medium">Worker</th>
                 </tr>
               </thead>
@@ -97,6 +101,18 @@ export function MonitorDetail({ id }: MonitorDetailProps) {
                     <td className="py-4 text-zinc-300">{check.statusCode}</td>
                     <td className="py-4 text-zinc-300">
                       {check.responseTimeMs}ms
+                    </td>
+                    <td className="py-4 text-zinc-500">
+                      {check.dnsMs}ms
+                    </td>
+                    <td className="py-4 text-zinc-500">
+                      {check.tcpMs}ms
+                    </td>
+                    <td className="py-4 text-zinc-500">
+                      {check.tlsMs}ms
+                    </td>
+                    <td className="py-4 text-zinc-500">
+                      {check.ttfbMs}ms
                     </td>
                     <td className="py-4 text-zinc-300">
                       {check.workerName || "Unknown"}
