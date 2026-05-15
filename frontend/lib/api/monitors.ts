@@ -15,3 +15,16 @@ export function createMonitor(input: CreateMonitorInput) {
     method: "POST",
   });
 }
+
+export function setMonitorEnabled(id: string, enabled: boolean) {
+  return api<Monitor>(`/monitors/${id}/enabled`, {
+    body: { enabled },
+    method: "PATCH",
+  });
+}
+
+export function deleteMonitor(id: string) {
+  return api<void>(`/monitors/${id}`, {
+    method: "DELETE",
+  });
+}

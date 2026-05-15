@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/components/data/query-state";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Button } from "@/components/ui/button";
 import {
   checkStatusOf,
   dateTimeLabel,
@@ -18,7 +20,7 @@ import {
   statusOf,
 } from "@/lib/format";
 import { useMonitorIncidents } from "@/lib/queries/use-incidents";
-import { useMonitor, useMonitors } from "@/lib/queries/use-monitors";
+import { useMonitor, useMonitors, useSetMonitorEnabled, useDeleteMonitor } from "@/lib/queries/use-monitors";
 import { useMonitorChecks } from "@/lib/queries/use-results";
 
 type MonitorDetailProps = {
@@ -137,6 +139,57 @@ export function MonitorDetail({ id }: MonitorDetailProps) {
         </PanelBody>
       </Panel>
     </div>
+  );
+}
+
+export function MonitorActions({ id }: MonitorDetailProps) {
+  const router = useRouter();
+  const monitor = useMonitor(id);
+  const toggleEnabled = useSetMonitorEnabled(id);
+  const remove = useDeleteMonitor(id);
+
+  const isEnabled = monitor.data?.enabled ?? true;
+
+  function handleToggle() {
+    toggleEnabled.mutate(!isEnabled);
+  }
+
+  function handleDelete() {
+    if (!confirm("Are you sure you want to delete this monitor? This cannot be undone.")) {
+      return;
+    }
+    remove.mutate(undefined, {
+      onSuccess: () => router.push("/monitors"),
+    });
+  }
+
+  if (!monitor.data) {
+    return null;
+  }
+
+  return (
+    <>
+      <Button
+        disabled={toggleEnabled.isPending}
+        onClick={handleToggle}
+        variant="secondary"
+        id="toggle-monitor-btn"
+      >
+        {toggleEnabled.isPending
+          ? "Updating..."
+          : isEnabled
+            ? "⏸ Pause"
+            : "▶ Resume"}
+      </Button>
+      <Button
+        disabled={remove.isPending}
+        onClick={handleDelete}
+        variant="danger"
+        id="delete-monitor-btn"
+      >
+        {remove.isPending ? "Deleting..." : "🗑 Delete"}
+      </Button>
+    </>
   );
 }
 

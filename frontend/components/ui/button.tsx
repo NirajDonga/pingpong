@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { cn } from "@/lib/cn";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
@@ -13,6 +13,7 @@ const variants: Record<ButtonVariant, string> = {
   primary: "border-white bg-white !text-black hover:bg-zinc-200",
   secondary: "border-zinc-700 bg-zinc-950 text-white hover:border-zinc-500",
   ghost: "border-transparent bg-transparent text-zinc-300 hover:text-white",
+  danger: "border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20 hover:border-red-500/60",
 };
 
 export function buttonClasses(variant: ButtonVariant = "primary", className?: string) {

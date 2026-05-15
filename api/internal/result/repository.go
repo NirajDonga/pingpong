@@ -162,7 +162,7 @@ type clickHouseResultRow struct {
 
 type historyRow struct {
 	MonitorID      string `json:"monitorId"`
-	CheckedAtMS    int64  `json:"checkedAtMs"`
+	CheckedAtMS    int64  `json:"checkedAtMs,string"`
 	Success        bool   `json:"success"`
 	StatusCode     int    `json:"statusCode"`
 	ResponseTimeMS int64  `json:"responseTimeMs"`

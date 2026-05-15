@@ -1,4 +1,4 @@
-import { MonitorDetail, MonitorTitle } from "@/components/features/monitors/monitor-detail";
+import { MonitorDetail, MonitorTitle, MonitorActions } from "@/components/features/monitors/monitor-detail";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { ButtonLink } from "@/components/ui/button";
@@ -16,9 +16,12 @@ export default async function MonitorDetailPage({
     <AppShell requireAuth>
       <PageHeader
         actions={
-          <ButtonLink href="/monitors" variant="secondary">
-            Back
-          </ButtonLink>
+          <div className="flex items-center gap-2">
+            <MonitorActions id={id} />
+            <ButtonLink href="/monitors" variant="secondary">
+              Back
+            </ButtonLink>
+          </div>
         }
         eyebrow="Monitor detail"
         title={<MonitorTitle id={id} />}
