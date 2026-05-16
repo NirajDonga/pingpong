@@ -10,7 +10,7 @@ import {
 } from "@/components/data/query-state";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import {
   checkStatusOf,
   dateTimeLabel,
@@ -96,87 +96,104 @@ export function MonitorDetail({ id }: MonitorDetailProps) {
             {Object.entries(checksByRegion)
               .sort(([regionA], [regionB]) => regionA.localeCompare(regionB))
               .map(([region, regionChecks]) => {
-              // Ensure checks are sorted by time (newest first)
-              const sortedChecks = [...regionChecks].sort(
-                (a, b) => new Date(b.checkedAt).getTime() - new Date(a.checkedAt).getTime()
-              );
-              const latestCheck = sortedChecks[0];
+                // Ensure checks are sorted by time (newest first)
+                const sortedChecks = [...regionChecks].sort(
+                  (a, b) =>
+                    new Date(b.checkedAt).getTime() -
+                    new Date(a.checkedAt).getTime()
+                );
+                const latestCheck = sortedChecks[0];
 
-              const regionTotal = sortedChecks.length;
-              const regionSuccess = sortedChecks.filter((c) => c.success).length;
-              const regionUptime =
-                regionTotal > 0
-                  ? ((regionSuccess / regionTotal) * 100).toFixed(2) + "%"
-                  : "N/A";
-              const avgLatency =
-                regionTotal > 0
-                  ? (
-                      sortedChecks.reduce((sum, c) => sum + c.responseTimeMs, 0) /
-                      regionTotal
-                    ).toFixed(0) + "ms"
-                  : "N/A";
+                const regionTotal = sortedChecks.length;
+                const regionSuccess = sortedChecks.filter((c) => c.success)
+                  .length;
+                const regionUptime =
+                  regionTotal > 0
+                    ? ((regionSuccess / regionTotal) * 100).toFixed(2) + "%"
+                    : "N/A";
+                const avgLatency =
+                  regionTotal > 0
+                    ? (
+                        sortedChecks.reduce(
+                          (sum, c) => sum + c.responseTimeMs,
+                          0
+                        ) / regionTotal
+                      ).toFixed(0) + "ms"
+                    : "N/A";
 
-              // Take up to 20 most recent checks and reverse for chronological display L -> R
-              const recentHistory = sortedChecks.slice(0, 20).reverse();
+                // Take up to 20 most recent checks and reverse for chronological display L -> R
+                const recentHistory = sortedChecks.slice(0, 20).reverse();
 
-              return (
-                <Panel key={region}>
-                  <PanelBody className="flex flex-col gap-5">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-white flex items-center gap-2">
-                        <span className="text-zinc-400">📍</span> {region}
-                      </h3>
-                      {latestCheck && (
-                        <StatusBadge status={checkStatusOf(latestCheck)} />
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
-                          Uptime
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-white">
-                          {regionUptime}
-                        </p>
+                return (
+                  <Panel key={region}>
+                    <PanelBody className="flex flex-col gap-5">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-white flex items-center gap-2">
+                          <span className="text-zinc-400">📍</span> {region}
+                        </h3>
+                        {latestCheck && (
+                          <StatusBadge status={checkStatusOf(latestCheck)} />
+                        )}
                       </div>
-                      <div>
-                        <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
-                          Avg Latency
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-white">
-                          {avgLatency}
-                        </p>
-                      </div>
-                    </div>
 
-                    {recentHistory.length > 0 && (
-                      <div className="mt-2">
-                        <div className="flex items-center justify-between mb-2">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
                           <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
-                            Recent History
+                            Uptime
                           </p>
-                          <span className="text-[10px] text-zinc-500">
-                            Last {recentHistory.length}
-                          </span>
+                          <p className="mt-1 text-sm font-medium text-white">
+                            {regionUptime}
+                          </p>
                         </div>
-                        <div className="flex gap-1 h-8">
-                          {recentHistory.map((c, i) => (
-                            <div
-                              key={i}
-                              title={`${shortTimeLabel(c.checkedAt)} - ${c.responseTimeMs}ms`}
-                              className={`flex-1 rounded-[2px] transition-opacity hover:opacity-80 ${
-                                c.success ? "bg-green-500/80" : "bg-red-500/80"
-                              }`}
-                            />
-                          ))}
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+                            Avg Latency
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-white">
+                            {avgLatency}
+                          </p>
                         </div>
                       </div>
-                    )}
-                  </PanelBody>
-                </Panel>
-              );
-            })}
+
+                      {recentHistory.length > 0 && (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+                              Recent History
+                            </p>
+                            <span className="text-[10px] text-zinc-500">
+                              Last {recentHistory.length}
+                            </span>
+                          </div>
+                          <div className="flex gap-1 h-8">
+                            {recentHistory.map((c, i) => (
+                              <div
+                                key={i}
+                                title={`${shortTimeLabel(c.checkedAt)} - ${c.responseTimeMs}ms`}
+                                className={`flex-1 rounded-[2px] transition-opacity hover:opacity-80 ${
+                                  c.success
+                                    ? "bg-green-500/80"
+                                    : "bg-red-500/80"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-2">
+                        <ButtonLink
+                          href={`/monitors/${id}/history?region=${region}`}
+                          variant="secondary"
+                          className="w-full text-center text-xs"
+                        >
+                          View {region} History
+                        </ButtonLink>
+                      </div>
+                    </PanelBody>
+                  </Panel>
+                );
+              })}
           </div>
         )}
       </div>
