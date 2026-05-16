@@ -66,6 +66,7 @@ export function MonitorHistory({ id }: MonitorHistoryProps) {
               <th className="px-5 py-4 font-medium">Code</th>
               <th className="px-5 py-4 font-medium">Total Latency</th>
               <th className="px-5 py-4 font-medium">Network Breakdown</th>
+              <th className="px-5 py-4 font-medium">Error Details</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
@@ -89,6 +90,9 @@ export function MonitorHistory({ id }: MonitorHistoryProps) {
                   <span title="TCP">TCP: {check.tcpMs}</span>
                   <span title="TLS">TLS: {check.tlsMs}</span>
                   <span title="TTFB">TTFB: {check.ttfbMs}</span>
+                </td>
+                <td className="px-5 py-4 text-red-400 text-xs max-w-[200px] truncate" title={check.error}>
+                  {check.error || "-"}
                 </td>
               </tr>
             ))}
