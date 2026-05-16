@@ -32,7 +32,7 @@ func (c *Client) Close() {
 }
 
 func (c *Client) SubscribeCheckJobs(handler func(worker.CheckJob)) (*natsgo.Subscription, error) {
-	return c.conn.QueueSubscribe(CheckJobsSubject, WorkersQueue, func(msg *natsgo.Msg) {
+	return c.conn.Subscribe(CheckJobsSubject, func(msg *natsgo.Msg) {
 		var job worker.CheckJob
 		if err := json.Unmarshal(msg.Data, &job); err != nil {
 			log.Printf("failed to decode check job: %v", err)
