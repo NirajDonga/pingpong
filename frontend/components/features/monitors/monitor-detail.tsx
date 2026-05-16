@@ -51,79 +51,136 @@ export function MonitorDetail({ id }: MonitorDetailProps) {
     return <EmptyState message="This monitor was not found." title="Missing monitor" />;
   }
 
+  const checksData = checks.data || [];
+  
+  // Calculate Global Uptime
+  const totalChecks = checksData.length;
+  const successfulChecks = checksData.filter((c) => c.success).length;
+  const uptimePercentage =
+    totalChecks > 0
+      ? ((successfulChecks / totalChecks) * 100).toFixed(2) + "%"
+      : "N/A";
+
+  // Group by region
+  const checksByRegion = checksData.reduce((acc, check) => {
+    const region = check.workerName || "Unknown Region";
+    if (!acc[region]) acc[region] = [];
+    acc[region].push(check);
+    return acc;
+  }, {} as Record<string, typeof checksData>);
+
   return (
     <div className="grid gap-6">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Summary label="Status">
           <StatusBadge status={statusOf(monitor.data)} />
         </Summary>
+        <Summary label="Uptime">{uptimePercentage}</Summary>
         <Summary label="Interval">
           {intervalLabel(monitor.data.interval_seconds)}
         </Summary>
         <Summary label="Expected">{monitor.data.expected_status}</Summary>
         <Summary label="Failures">{monitor.data.consecutive_failures}</Summary>
       </div>
-      <Panel>
-        <PanelHeader>
-          <h2 className="font-medium text-white">Recent checks</h2>
-        </PanelHeader>
-        <PanelBody className="overflow-x-auto">
-          {checks.isLoading ? (
-            <p className="text-sm text-zinc-500">Loading checks...</p>
-          ) : checks.isError ? (
-            <p className="text-sm text-red-300">{checks.error.message}</p>
-          ) : !checks.data?.length ? (
-            <p className="text-sm text-zinc-500">No checks recorded yet.</p>
-          ) : (
-            <table className="w-full min-w-[900px] text-left text-sm">
-              <thead className="text-xs uppercase tracking-[0.16em] text-zinc-600">
-                <tr>
-                  <th className="pb-3 font-medium">Time</th>
-                  <th className="pb-3 font-medium">Result</th>
-                  <th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Total</th>
-                  <th className="pb-3 font-medium">DNS</th>
-                  <th className="pb-3 font-medium">TCP</th>
-                  <th className="pb-3 font-medium">TLS</th>
-                  <th className="pb-3 font-medium">TTFB</th>
-                  <th className="pb-3 font-medium">Worker</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {checks.data.map((check) => (
-                  <tr key={`${check.checkedAt}-${check.statusCode}`}>
-                    <td className="py-4 text-zinc-300">
-                      {shortTimeLabel(check.checkedAt)}
-                    </td>
-                    <td className="py-4">
-                      <StatusBadge status={checkStatusOf(check)} />
-                    </td>
-                    <td className="py-4 text-zinc-300">{check.statusCode}</td>
-                    <td className="py-4 text-zinc-300">
-                      {check.responseTimeMs}ms
-                    </td>
-                    <td className="py-4 text-zinc-500">
-                      {check.dnsMs}ms
-                    </td>
-                    <td className="py-4 text-zinc-500">
-                      {check.tcpMs}ms
-                    </td>
-                    <td className="py-4 text-zinc-500">
-                      {check.tlsMs}ms
-                    </td>
-                    <td className="py-4 text-zinc-500">
-                      {check.ttfbMs}ms
-                    </td>
-                    <td className="py-4 text-zinc-300">
-                      {check.workerName || "Unknown"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </PanelBody>
-      </Panel>
+
+      <div className="space-y-6">
+        <h2 className="text-xl font-medium text-white">Region Overview</h2>
+        {checks.isLoading ? (
+          <p className="text-sm text-zinc-500">Loading checks...</p>
+        ) : checks.isError ? (
+          <p className="text-sm text-red-300">{checks.error.message}</p>
+        ) : Object.keys(checksByRegion).length === 0 ? (
+          <p className="text-sm text-zinc-500">No checks recorded yet.</p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Object.entries(checksByRegion)
+              .sort(([regionA], [regionB]) => regionA.localeCompare(regionB))
+              .map(([region, regionChecks]) => {
+              // Ensure checks are sorted by time (newest first)
+              const sortedChecks = [...regionChecks].sort(
+                (a, b) => new Date(b.checkedAt).getTime() - new Date(a.checkedAt).getTime()
+              );
+              const latestCheck = sortedChecks[0];
+
+              const regionTotal = sortedChecks.length;
+              const regionSuccess = sortedChecks.filter((c) => c.success).length;
+              const regionUptime =
+                regionTotal > 0
+                  ? ((regionSuccess / regionTotal) * 100).toFixed(2) + "%"
+                  : "N/A";
+              const avgLatency =
+                regionTotal > 0
+                  ? (
+                      sortedChecks.reduce((sum, c) => sum + c.responseTimeMs, 0) /
+                      regionTotal
+                    ).toFixed(0) + "ms"
+                  : "N/A";
+
+              // Take up to 20 most recent checks and reverse for chronological display L -> R
+              const recentHistory = sortedChecks.slice(0, 20).reverse();
+
+              return (
+                <Panel key={region}>
+                  <PanelBody className="flex flex-col gap-5">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium text-white flex items-center gap-2">
+                        <span className="text-zinc-400">📍</span> {region}
+                      </h3>
+                      {latestCheck && (
+                        <StatusBadge status={checkStatusOf(latestCheck)} />
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+                          Uptime
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-white">
+                          {regionUptime}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+                          Avg Latency
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-white">
+                          {avgLatency}
+                        </p>
+                      </div>
+                    </div>
+
+                    {recentHistory.length > 0 && (
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+                            Recent History
+                          </p>
+                          <span className="text-[10px] text-zinc-500">
+                            Last {recentHistory.length}
+                          </span>
+                        </div>
+                        <div className="flex gap-1 h-8">
+                          {recentHistory.map((c, i) => (
+                            <div
+                              key={i}
+                              title={`${shortTimeLabel(c.checkedAt)} - ${c.responseTimeMs}ms`}
+                              className={`flex-1 rounded-[2px] transition-opacity hover:opacity-80 ${
+                                c.success ? "bg-green-500/80" : "bg-red-500/80"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </PanelBody>
+                </Panel>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <Panel>
         <PanelHeader>
           <h2 className="font-medium text-white">Incidents</h2>
