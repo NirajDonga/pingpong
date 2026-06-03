@@ -59,7 +59,7 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 func (h *Handler) Logout(c *gin.Context) {
-	c.SetSameSite(http.SameSiteLaxMode)
+	h.setCookieSameSite(c)
 	c.SetCookie(auth.SessionCookieName, "", -1, "/", "", h.cookieSecure, true)
 	c.Status(http.StatusNoContent)
 }
@@ -75,7 +75,7 @@ func (h *Handler) Me(c *gin.Context) {
 }
 
 func (h *Handler) setSessionCookie(c *gin.Context, token string) {
-	c.SetSameSite(http.SameSiteLaxMode)
+	h.setCookieSameSite(c)
 	c.SetCookie(
 		auth.SessionCookieName,
 		token,
@@ -85,4 +85,13 @@ func (h *Handler) setSessionCookie(c *gin.Context, token string) {
 		h.cookieSecure,
 		true,
 	)
+}
+
+func (h *Handler) setCookieSameSite(c *gin.Context) {
+	if h.cookieSecure {
+		c.SetSameSite(http.SameSiteNoneMode)
+		return
+	}
+
+	c.SetSameSite(http.SameSiteLaxMode)
 }
