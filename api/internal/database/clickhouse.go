@@ -11,7 +11,7 @@ import (
 func PingClickHouse(ctx context.Context, baseURL string) error {
 	pingURL := strings.TrimRight(baseURL, "/") + "/ping"
 
-	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(pingCtx, http.MethodGet, pingURL, nil)
