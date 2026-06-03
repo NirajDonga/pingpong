@@ -21,21 +21,27 @@ import (
 func main() {
 	cfg := config.Load()
 
+	log.Println("connecting to postgres")
 	db, err := database.Connect(context.Background(), cfg.PostgresURL)
 	if err != nil {
 		log.Fatalf("postgres connect: %v", err)
 	}
 	defer db.Close()
+	log.Println("connected to postgres")
 
+	log.Println("connecting to clickhouse")
 	if err := database.PingClickHouse(context.Background(), cfg.ClickHouseURL); err != nil {
 		log.Fatalf("clickhouse connect: %v", err)
 	}
+	log.Println("connected to clickhouse")
 
+	log.Println("connecting to nats")
 	natsClient, err := nats.NewClient(cfg.NATSURL)
 	if err != nil {
 		log.Fatalf("nats connect: %v", err)
 	}
 	defer natsClient.Close()
+	log.Println("connected to nats")
 
 	authSvc := auth.NewService(cfg.JWTSecret, 24*time.Hour)
 	userRepo := user.NewRepository(db)
