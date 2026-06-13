@@ -130,7 +130,7 @@ func (r *TinybirdRepository) History(ctx context.Context, monitorID uuid.UUID, l
 		results = append(results, CheckResult{
 			MonitorID:      row.MonitorID,
 			CheckedAt:      checkedAt.UTC(),
-			Success:        row.Success != 0,
+			Success:        row.Success,
 			StatusCode:     row.StatusCode,
 			ResponseTimeMS: row.ResponseTimeMS,
 			DNSMS:          row.DNSMS,
@@ -144,7 +144,6 @@ func (r *TinybirdRepository) History(ctx context.Context, monitorID uuid.UUID, l
 
 	return results, nil
 }
-
 
 func boolToUint8(b bool) uint8 {
 	if b {
@@ -172,7 +171,7 @@ type tinybirdEventRow struct {
 type tinybirdQueryRow struct {
 	MonitorID      string `json:"monitor_id"`
 	CheckedAt      string `json:"checked_at"`
-	Success        uint8  `json:"success"`
+	Success        bool   `json:"success"`
 	StatusCode     int    `json:"status_code"`
 	ResponseTimeMS int64  `json:"response_time_ms"`
 	DNSMS          int64  `json:"dns_ms"`
