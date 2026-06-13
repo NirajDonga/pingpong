@@ -9,26 +9,30 @@ import (
 )
 
 type Config struct {
-	Port          string
-	PostgresURL   string
-	ClickHouseURL string
-	NATSURL       string
-	JWTSecret     string
-	WebOrigin     string
-	CookieSecure  bool
+	Port                string
+	PostgresURL         string
+	TinybirdHost        string
+	TinybirdAppendToken string
+	TinybirdReadToken   string
+	NATSURL             string
+	JWTSecret           string
+	WebOrigin           string
+	CookieSecure        bool
 }
 
 func Load() Config {
 	_ = godotenv.Load()
 
 	return Config{
-		Port:          mustGetEnv("PORT"),
-		PostgresURL:   mustGetEnv("POSTGRES_URL"),
-		ClickHouseURL: mustGetEnv("CLICKHOUSE_URL"),
-		NATSURL:       mustGetEnv("NATS_URL"),
-		JWTSecret:     mustGetEnv("JWT_SECRET"),
-		WebOrigin:     mustGetEnv("WEB_ORIGIN"),
-		CookieSecure:  mustGetEnvBool("COOKIE_SECURE"),
+		Port:                mustGetEnv("PORT"),
+		PostgresURL:         mustGetEnv("POSTGRES_URL"),
+		TinybirdHost:        mustGetEnv("TINYBIRD_HOST"),
+		TinybirdAppendToken: mustGetEnv("TINYBIRD_APPEND_TOKEN"),
+		TinybirdReadToken:   mustGetEnv("TINYBIRD_READ_TOKEN"),
+		NATSURL:             mustGetEnv("NATS_URL"),
+		JWTSecret:           mustGetEnv("JWT_SECRET"),
+		WebOrigin:           mustGetEnv("WEB_ORIGIN"),
+		CookieSecure:        mustGetEnvBool("COOKIE_SECURE"),
 	}
 }
 
