@@ -8,6 +8,6 @@ export function useMonitorChecks(monitorId: string) {
     enabled: Boolean(monitorId),
     queryFn: () => listMonitorChecks(monitorId),
     queryKey: queryKeys.monitorChecks(monitorId),
-    refetchInterval: 30_000,
+    refetchInterval: 30 * 1000 * 60,
   });
 }
