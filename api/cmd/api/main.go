@@ -29,11 +29,7 @@ func main() {
 	defer db.Close()
 	log.Println("connected to postgres")
 
-	log.Println("connecting to clickhouse")
-	if err := database.PingClickHouse(context.Background(), cfg.ClickHouseURL); err != nil {
-		log.Fatalf("clickhouse connect: %v", err)
-	}
-	log.Println("connected to clickhouse")
+	log.Println("tinybird configured")
 
 	log.Println("connecting to nats")
 	natsClient, err := nats.NewClient(cfg.NATSURL)
@@ -50,7 +46,7 @@ func main() {
 	monitorRepo := monitor.NewRepository(db)
 	monitorSvc := monitor.NewService(monitorRepo)
 	monitorHandler := monitor.NewHandler(monitorSvc)
-	resultRepo := result.NewClickHouseRepository(cfg.ClickHouseURL)
+	resultRepo := result.NewTinybirdRepository(cfg.TinybirdHost, cfg.TinybirdAppendToken, cfg.TinybirdReadToken)
 	resultSvc := result.NewService(resultRepo, monitorRepo)
 	resultHandler := result.NewHandler(monitorSvc, resultSvc)
 	incidentRepo := incident.NewRepository(db)

@@ -1,0 +1,19 @@
+TOKEN check_results_append APPEND
+TOKEN check_results_read READ
+
+SCHEMA >
+  `monitor_id` String `json:$.monitor_id`,
+  `checked_at` DateTime64(3) `json:$.checked_at`,
+  `success` Bool `json:$.success`,
+  `status_code` UInt16 `json:$.status_code`,
+  `response_time_ms` UInt32 `json:$.response_time_ms`,
+  `dns_ms` UInt32 `json:$.dns_ms`,
+  `tcp_ms` UInt32 `json:$.tcp_ms`,
+  `tls_ms` UInt32 `json:$.tls_ms`,
+  `ttfb_ms` UInt32 `json:$.ttfb_ms`,
+  `error` String `json:$.error`,
+  `worker_name` String `json:$.worker_name`
+
+ENGINE "MergeTree"
+ENGINE_PARTITION_KEY "toYYYYMM(checked_at)"
+ENGINE_SORTING_KEY "monitor_id, checked_at"
