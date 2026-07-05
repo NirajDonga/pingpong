@@ -15,6 +15,7 @@ import (
 	"github.com/NirajDonga/pingpong/api/internal/nats"
 	"github.com/NirajDonga/pingpong/api/internal/result"
 	"github.com/NirajDonga/pingpong/api/internal/user"
+	ws "github.com/NirajDonga/pingpong/api/internal/websocket"
 	"github.com/gin-gonic/gin"
 )
 
@@ -52,6 +53,7 @@ func main() {
 	incidentRepo := incident.NewRepository(db)
 	incidentSvc := incident.NewService(incidentRepo)
 	incidentHandler := incident.NewHandler(incidentSvc)
+	wsManager := ws.NewManager()
 
 	_, err = natsClient.SubscribeCheckResults(func(checkResult result.CheckResult) {
 		go func() {
@@ -61,6 +63,7 @@ func main() {
 			}
 
 			log.Printf("stored check result for monitor %s success=%t status=%d", checkResult.MonitorID, checkResult.Success, checkResult.StatusCode)
+			wsManager.Broadcast(checkResult.MonitorID, checkResult)
 		}()
 	})
 	if err != nil {
@@ -81,7 +84,7 @@ func main() {
 
 	user.RegisterRoutes(api, protected, userHandler)
 	monitor.RegisterRoutes(protected, monitorHandler)
-	result.RegisterRoutes(protected, resultHandler)
+	result.RegisterRoutes(protected, resultHandler, wsManager)
 	incident.RegisterRoutes(protected, incidentHandler)
 
 	log.Println("api service starting on :" + cfg.Port)
