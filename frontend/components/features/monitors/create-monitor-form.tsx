@@ -57,7 +57,6 @@ export function CreateMonitorForm() {
             onChange={(event) => setIntervalSeconds(Number(event.target.value))}
             value={intervalSeconds}
           >
-            <option value="30">30 sec</option>
             <option value="60">1 min</option>
             <option value="300">5 min</option>
           </Select>

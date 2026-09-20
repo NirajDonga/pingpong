@@ -29,6 +29,19 @@ func NewRunner(store *Store, publisher Publisher, batchSize int, tickEvery time.
 func (r *Runner) Run(ctx context.Context) {
 	log.Println("scheduler loop started")
 
+	// Align to the start of the next minute boundary
+	now := time.Now()
+	nextMinute := now.Truncate(time.Minute).Add(time.Minute)
+	select {
+	case <-ctx.Done():
+		log.Println("scheduler loop stopped")
+		return
+	case <-time.After(nextMinute.Sub(now)):
+	}
+
+	// Dispatch due monitors immediately at the minute boundary
+	r.dispatchDue(ctx)
+
 	ticker := time.NewTicker(r.tickEvery)
 	defer ticker.Stop()
 

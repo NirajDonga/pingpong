@@ -53,7 +53,7 @@ func (s *Store) DueMonitors(ctx context.Context, limit int) ([]DueMonitor, error
 func (s *Store) UpdateNextCheck(ctx context.Context, monitorID uuid.UUID, intervalSeconds int) error {
 	query := `
 		UPDATE monitors
-		SET next_check_at = NOW() + ($2 * INTERVAL '1 second')
+		SET next_check_at = date_trunc('minute', NOW() + ($2 * INTERVAL '1 second'))
 		WHERE id = $1
 	`
 

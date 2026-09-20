@@ -34,10 +34,11 @@ func NewTinybirdRepository(host, appendToken, readToken string) *TinybirdReposit
 // Insert sends a single check result to Tinybird via the Events API (NDJSON).
 func (r *TinybirdRepository) Insert(ctx context.Context, result CheckResult) error {
 	row := tinybirdEventRow{
-		MonitorID:      result.MonitorID,
-		CheckedAt:      result.CheckedAt.UTC().Format("2006-01-02T15:04:05.000Z"),
-		Success:        boolToUint8(result.Success),
-		StatusCode:     result.StatusCode,
+		MonitorID:  result.MonitorID,
+		CheckedAt:  result.CheckedAt.UTC().Format("2006-01-02T15:04:05.000Z"),
+		Success:    boolToUint8(result.Success),
+		StatusCode: result.StatusCode,
+
 		ResponseTimeMS: result.ResponseTimeMS,
 		DNSMS:          result.DNSMS,
 		TCPMS:          result.TCPMS,

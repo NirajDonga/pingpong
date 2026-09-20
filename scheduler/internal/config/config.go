@@ -22,7 +22,7 @@ func Load() Config {
 		PostgresURL: mustGetEnv("POSTGRES_URL"),
 		NATSURL:     mustGetEnv("NATS_URL"),
 		BatchSize:   100,
-		TickEvery:   time.Second,
+		TickEvery:   time.Minute,
 	}
 }
 

@@ -51,7 +51,7 @@ func (s *service) Create(ctx context.Context, userID string, input CreateRequest
 		ExpectedStatus:  expectedStatus,
 		Enabled:         true,
 		CurrentStatus:   "unknown",
-		NextCheckAt:     time.Now(),
+		NextCheckAt:     time.Now().Truncate(time.Minute),
 	}
 
 	return s.repo.Create(ctx, m)
@@ -140,8 +140,11 @@ func validateInput(name string, rawURL string, intervalSeconds int, timeoutSecon
 	if !isMonitorURLAllowed(rawURL) {
 		return errors.New("valid public http or https url is required")
 	}
-	if intervalSeconds < 30 {
-		return errors.New("interval_seconds must be at least 30")
+	if intervalSeconds < 60 {
+		return errors.New("interval_seconds must be at least 60")
+	}
+	if intervalSeconds%60 != 0 {
+		return errors.New("interval_seconds must be a multiple of 60")
 	}
 	if timeoutSeconds < 1 {
 		return errors.New("timeout_seconds must be at least 1")
