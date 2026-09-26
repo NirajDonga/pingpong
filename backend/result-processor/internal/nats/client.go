@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/NirajDonga/pingpong/backend/api/internal/result"
+	"github.com/NirajDonga/pingpong/backend/result-processor/internal/processor"
 	natsgo "github.com/nats-io/nats.go"
 )
 
 const (
 	CheckResultsSubject = "check.results"
+	ProcessorQueue      = "processor"
 )
 
 type Client struct {
@@ -29,9 +30,9 @@ func (c *Client) Close() {
 	c.conn.Close()
 }
 
-func (c *Client) SubscribeCheckResults(handler func(result.CheckResult)) (*natsgo.Subscription, error) {
-	return c.conn.Subscribe(CheckResultsSubject, func(msg *natsgo.Msg) {
-		var checkResult result.CheckResult
+func (c *Client) SubscribeCheckResults(handler func(processor.CheckResult)) (*natsgo.Subscription, error) {
+	return c.conn.QueueSubscribe(CheckResultsSubject, ProcessorQueue, func(msg *natsgo.Msg) {
+		var checkResult processor.CheckResult
 		if err := json.Unmarshal(msg.Data, &checkResult); err != nil {
 			log.Printf("failed to decode check result: %v", err)
 			return

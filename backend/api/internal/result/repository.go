@@ -1,7 +1,6 @@
 package result
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -16,69 +15,20 @@ import (
 
 // TinybirdRepository stores and retrieves check results via Tinybird's HTTP APIs.
 type TinybirdRepository struct {
-	host        string
-	appendToken string
-	readToken   string
-	client      *http.Client
+	host      string
+	readToken string
+	client    *http.Client
 }
 
-func NewTinybirdRepository(host, appendToken, readToken string) *TinybirdRepository {
+func NewTinybirdRepository(host, readToken string) *TinybirdRepository {
 	return &TinybirdRepository{
-		host:        strings.TrimRight(host, "/"),
-		appendToken: appendToken,
-		readToken:   readToken,
-		client:      &http.Client{},
+		host:      strings.TrimRight(host, "/"),
+		readToken: readToken,
+		client:    &http.Client{},
 	}
 }
 
-// Insert sends a single check result to Tinybird via the Events API (NDJSON).
-func (r *TinybirdRepository) Insert(ctx context.Context, result CheckResult) error {
-	row := tinybirdEventRow{
-		MonitorID:  result.MonitorID,
-		CheckedAt:  result.CheckedAt.UTC().Format("2006-01-02T15:04:05.000Z"),
-		Success:    boolToUint8(result.Success),
-		StatusCode: result.StatusCode,
 
-		ResponseTimeMS: result.ResponseTimeMS,
-		DNSMS:          result.DNSMS,
-		TCPMS:          result.TCPMS,
-		TLSMS:          result.TLSMS,
-		TTFBMS:         result.TTFBMS,
-		Error:          result.Error,
-		WorkerName:     result.WorkerName,
-	}
-
-	data, err := json.Marshal(row)
-	if err != nil {
-		return fmt.Errorf("tinybird marshal: %w", err)
-	}
-	// NDJSON: single line terminated by newline
-	data = append(data, '\n')
-
-	opCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	url := r.host + "/v0/events?name=check_results"
-	req, err := http.NewRequestWithContext(opCtx, http.MethodPost, url, bytes.NewReader(data))
-	if err != nil {
-		return fmt.Errorf("tinybird insert request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+r.appendToken)
-	req.Header.Set("Content-Type", "application/x-ndjson")
-
-	res, err := r.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("tinybird insert: %w", err)
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusMultipleChoices {
-		body, _ := io.ReadAll(res.Body)
-		return fmt.Errorf("tinybird insert failed (%s): %s", res.Status, strings.TrimSpace(string(body)))
-	}
-
-	return nil
-}
 
 // History queries Tinybird's SQL API and returns check results for a monitor.
 func (r *TinybirdRepository) History(ctx context.Context, monitorID uuid.UUID, limit int) ([]CheckResult, error) {
@@ -146,27 +96,7 @@ func (r *TinybirdRepository) History(ctx context.Context, monitorID uuid.UUID, l
 	return results, nil
 }
 
-func boolToUint8(b bool) uint8 {
-	if b {
-		return 1
-	}
-	return 0
-}
 
-// tinybirdEventRow matches the Tinybird check_results datasource schema for writes.
-type tinybirdEventRow struct {
-	MonitorID      string `json:"monitor_id"`
-	CheckedAt      string `json:"checked_at"`
-	Success        uint8  `json:"success"`
-	StatusCode     int    `json:"status_code"`
-	ResponseTimeMS int64  `json:"response_time_ms"`
-	DNSMS          int64  `json:"dns_ms"`
-	TCPMS          int64  `json:"tcp_ms"`
-	TLSMS          int64  `json:"tls_ms"`
-	TTFBMS         int64  `json:"ttfb_ms"`
-	Error          string `json:"error"`
-	WorkerName     string `json:"worker_name"`
-}
 
 // tinybirdQueryRow matches a row from the Tinybird SQL query response for reads.
 type tinybirdQueryRow struct {

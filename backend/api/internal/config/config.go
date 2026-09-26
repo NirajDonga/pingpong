@@ -12,7 +12,7 @@ type Config struct {
 	Port                string
 	PostgresURL         string
 	TinybirdHost        string
-	TinybirdAppendToken string
+
 	TinybirdReadToken   string
 	NATSURL             string
 	JWTSecret           string
@@ -27,7 +27,7 @@ func Load() Config {
 		Port:                mustGetEnv("PORT"),
 		PostgresURL:         mustGetEnv("POSTGRES_URL"),
 		TinybirdHost:        mustGetEnv("TINYBIRD_HOST"),
-		TinybirdAppendToken: mustGetEnv("TINYBIRD_APPEND_TOKEN"),
+
 		TinybirdReadToken:   mustGetEnv("TINYBIRD_READ_TOKEN"),
 		NATSURL:             mustGetEnv("NATS_URL"),
 		JWTSecret:           mustGetEnv("JWT_SECRET"),
