@@ -56,13 +56,13 @@ This starts PostgreSQL (`:5432`), ClickHouse (`:8123`), and NATS (`:4222`).
 
 ```bash
 # API
-cd api && go run ./cmd/api
+cd backend/api && go run ./cmd/api
 
 # Scheduler
-cd scheduler && go run ./cmd/scheduler
+cd backend/scheduler && go run ./cmd/scheduler
 
 # Worker
-cd worker && go run ./cmd/worker
+cd backend/worker && go run ./cmd/worker
 
 # Frontend
 cd frontend && pnpm install && pnpm dev
@@ -72,12 +72,15 @@ cd frontend && pnpm install && pnpm dev
 
 ```
 pingpong/
-├── api/          # REST API + result consumer
-├── scheduler/    # Check job publisher
-├── worker/       # HTTP checker
+├── backend/
+│   ├── api/          # REST API + result consumer
+│   ├── scheduler/    # Check job publisher
+│   └── worker/       # HTTP checker
+├── data/
+│   └── tinybird/     # Analytics (future)
+├── docs/         # Documentation
 ├── frontend/     # Next.js dashboard
-├── infra/        # Docker Compose
-└── tinybird/     # Analytics (future)
+└── infra/        # Docker Compose
 ```
 
 ## Data Model (PostgreSQL)
