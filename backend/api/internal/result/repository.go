@@ -28,8 +28,6 @@ func NewTinybirdRepository(host, readToken string) *TinybirdRepository {
 	}
 }
 
-
-
 // History queries Tinybird's SQL API and returns check results for a monitor.
 func (r *TinybirdRepository) History(ctx context.Context, monitorID uuid.UUID, limit int) ([]CheckResult, error) {
 	query := fmt.Sprintf(
@@ -95,8 +93,6 @@ func (r *TinybirdRepository) History(ctx context.Context, monitorID uuid.UUID, l
 
 	return results, nil
 }
-
-
 
 // tinybirdQueryRow matches a row from the Tinybird SQL query response for reads.
 type tinybirdQueryRow struct {

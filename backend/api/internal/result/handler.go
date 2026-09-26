@@ -8,6 +8,7 @@ import (
 	"github.com/NirajDonga/pingpong/backend/api/internal/monitor"
 	ws "github.com/NirajDonga/pingpong/backend/api/internal/websocket"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -17,13 +18,13 @@ var upgrader = websocket.Upgrader{
 
 type Handler struct {
 	monitorSvc monitor.Service
-	resultSvc  *Service
+	resultRepo *TinybirdRepository
 }
 
-func NewHandler(monitorSvc monitor.Service, resultSvc *Service) *Handler {
+func NewHandler(monitorSvc monitor.Service, resultRepo *TinybirdRepository) *Handler {
 	return &Handler{
 		monitorSvc: monitorSvc,
-		resultSvc:  resultSvc,
+		resultRepo: resultRepo,
 	}
 }
 
@@ -40,13 +41,22 @@ func (h *Handler) History(c *gin.Context) {
 		return
 	}
 
+	mid, err := uuid.Parse(monitorID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid monitor id"})
+		return
+	}
+
 	limit, err := strconv.Atoi(c.DefaultQuery("limit", "100"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "limit must be a number"})
 		return
 	}
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
 
-	results, err := h.resultSvc.History(c.Request.Context(), monitorID, limit)
+	results, err := h.resultRepo.History(c.Request.Context(), mid, limit)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

@@ -48,11 +48,9 @@ func main() {
 	monitorSvc := monitor.NewService(monitorRepo)
 	monitorHandler := monitor.NewHandler(monitorSvc)
 	resultRepo := result.NewTinybirdRepository(cfg.TinybirdHost, cfg.TinybirdReadToken)
-	resultSvc := result.NewService(resultRepo)
-	resultHandler := result.NewHandler(monitorSvc, resultSvc)
+	resultHandler := result.NewHandler(monitorSvc, resultRepo)
 	incidentRepo := incident.NewRepository(db)
-	incidentSvc := incident.NewService(incidentRepo)
-	incidentHandler := incident.NewHandler(incidentSvc)
+	incidentHandler := incident.NewHandler(incidentRepo)
 	wsManager := ws.NewManager()
 
 	_, err = natsClient.SubscribeCheckResults(func(checkResult result.CheckResult) {

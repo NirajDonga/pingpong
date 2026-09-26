@@ -11,6 +11,7 @@ import (
 	"github.com/NirajDonga/pingpong/backend/result-processor/internal/database"
 	"github.com/NirajDonga/pingpong/backend/result-processor/internal/nats"
 	"github.com/NirajDonga/pingpong/backend/result-processor/internal/processor"
+	"github.com/google/uuid"
 )
 
 func main() {
@@ -34,13 +35,25 @@ func main() {
 
 	tbRepo := processor.NewTinybirdRepository(cfg.TinybirdHost, cfg.TinybirdAppendToken)
 	pgRepo := processor.NewPostgresRepository(db)
-	svc := processor.NewService(tbRepo, pgRepo)
+
 
 	sub, err := natsClient.SubscribeCheckResults(func(checkResult processor.CheckResult) {
-		if err := svc.Process(context.Background(), checkResult); err != nil {
-			log.Printf("failed to process check result for monitor %s: %v", checkResult.MonitorID, err)
+		if err := tbRepo.Insert(context.Background(), checkResult); err != nil {
+			log.Printf("failed to insert check result to tinybird for monitor %s: %v", checkResult.MonitorID, err)
 			return
 		}
+
+		monitorID, err := uuid.Parse(checkResult.MonitorID)
+		if err != nil {
+			log.Printf("invalid monitorId %s: %v", checkResult.MonitorID, err)
+			return
+		}
+
+		if err := pgRepo.ApplyCheckResult(context.Background(), monitorID, checkResult.Success); err != nil {
+			log.Printf("failed to apply check result to postgres for monitor %s: %v", monitorID, err)
+			return
+		}
+
 		log.Printf("processed check result for monitor %s success=%t status=%d", checkResult.MonitorID, checkResult.Success, checkResult.StatusCode)
 	})
 	if err != nil {

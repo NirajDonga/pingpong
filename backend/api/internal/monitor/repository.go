@@ -25,7 +25,6 @@ type Repository interface {
 	Update(ctx context.Context, m Monitor) (*Monitor, error)
 	SetEnabled(ctx context.Context, userID uuid.UUID, monitorID uuid.UUID, enabled bool) (*Monitor, error)
 	Delete(ctx context.Context, userID uuid.UUID, monitorID uuid.UUID) error
-
 }
 
 type repository struct {
@@ -192,8 +191,6 @@ func (r *repository) Delete(ctx context.Context, userID uuid.UUID, monitorID uui
 
 	return nil
 }
-
-
 
 type monitorScanner interface {
 	Scan(dest ...any) error
