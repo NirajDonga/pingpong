@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/NirajDonga/pingpong/backend/api/internal/monitor"
+	"github.com/NirajDonga/pingpong/backend/api/pkg/monitor"
 	ws "github.com/NirajDonga/pingpong/backend/api/internal/websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/NirajDonga/pingpong/backend/api/internal/result"
+	"github.com/NirajDonga/pingpong/backend/api/pkg/result"
 	natsgo "github.com/nats-io/nats.go"
 )
 
