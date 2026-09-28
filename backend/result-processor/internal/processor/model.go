@@ -3,15 +3,15 @@ package processor
 import "time"
 
 type CheckResult struct {
-	MonitorID      string    `json:"monitor_id"`
-	CheckedAt      time.Time `json:"checked_at"`
+	MonitorID      string    `json:"monitorId"`
+	CheckedAt      time.Time `json:"checkedAt"`
 	Success        bool      `json:"success"`
-	StatusCode     int       `json:"status_code"`
-	ResponseTimeMS int       `json:"response_time_ms"`
-	DNSMS          int       `json:"dns_ms"`
-	TCPMS          int       `json:"tcp_ms"`
-	TLSMS          int       `json:"tls_ms"`
-	TTFBMS         int       `json:"ttfb_ms"`
+	StatusCode     int       `json:"statusCode"`
+	ResponseTimeMS int64     `json:"responseTimeMs"`
+	DNSMS          int64     `json:"dnsMs"`
+	TCPMS          int64     `json:"tcpMs"`
+	TLSMS          int64     `json:"tlsMs"`
+	TTFBMS         int64     `json:"ttfbMs"`
 	Error          string    `json:"error,omitempty"`
-	WorkerName     string    `json:"worker_name"`
+	WorkerName     string    `json:"workerName"`
 }

@@ -21,6 +21,8 @@ type MonitorHistoryProps = {
 
 export function MonitorHistory({ id }: MonitorHistoryProps) {
   const checks = useMonitorChecks(id);
+  const searchParams = useSearchParams();
+  const regionFilter = searchParams.get("region");
 
   if (checks.isLoading) {
     return (
@@ -40,9 +42,6 @@ export function MonitorHistory({ id }: MonitorHistoryProps) {
   if (!checks.data?.length) {
     return <EmptyState message="No past checks recorded yet." title="No history" />;
   }
-
-  const searchParams = useSearchParams();
-  const regionFilter = searchParams.get("region");
 
   // Filter by region if specified
   const filteredChecks = regionFilter

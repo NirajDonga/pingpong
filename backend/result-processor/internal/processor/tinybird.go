@@ -29,7 +29,7 @@ func (r *TinybirdRepository) Insert(ctx context.Context, result CheckResult) err
 	row := map[string]interface{}{
 		"monitor_id":       result.MonitorID,
 		"checked_at":       result.CheckedAt.UTC().Format("2006-01-02T15:04:05.000Z"),
-		"success":          boolToUint8(result.Success),
+		"success":          result.Success,
 		"status_code":      result.StatusCode,
 		"response_time_ms": result.ResponseTimeMS,
 		"dns_ms":           result.DNSMS,
@@ -71,9 +71,3 @@ func (r *TinybirdRepository) Insert(ctx context.Context, result CheckResult) err
 	return nil
 }
 
-func boolToUint8(b bool) uint8 {
-	if b {
-		return 1
-	}
-	return 0
-}
