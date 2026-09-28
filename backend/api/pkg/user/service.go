@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NirajDonga/pingpong/backend/api/internal/auth"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -22,10 +21,10 @@ type Service interface {
 
 type service struct {
 	repo Repository
-	auth auth.Service
+	auth AuthService
 }
 
-func NewService(repo Repository, authSvc auth.Service) Service {
+func NewService(repo Repository, authSvc AuthService) Service {
 	return &service{
 		repo: repo,
 		auth: authSvc,

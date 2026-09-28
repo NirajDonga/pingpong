@@ -1,15 +1,14 @@
-package middleware
+package user
 
 import (
 	"net/http"
 
-	"github.com/NirajDonga/pingpong/backend/api/internal/auth"
 	"github.com/gin-gonic/gin"
 )
 
-func Auth(authSvc auth.Service) gin.HandlerFunc {
+func Auth(authSvc AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token, err := c.Cookie(auth.SessionCookieName)
+		token, err := c.Cookie(SessionCookieName)
 		if err != nil || token == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing session"})
 			return

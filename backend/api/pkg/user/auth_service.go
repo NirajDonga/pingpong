@@ -1,4 +1,4 @@
-package auth
+package user
 
 import (
 	"errors"
@@ -18,24 +18,24 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-type Service interface {
+type AuthService interface {
 	GenerateToken(userID string) (string, error)
 	ValidateToken(token string) (*Claims, error)
 }
 
-type service struct {
+type authService struct {
 	secret []byte
 	ttl    time.Duration
 }
 
-func NewService(secret string, ttl time.Duration) Service {
-	return &service{
+func NewAuthService(secret string, ttl time.Duration) AuthService {
+	return &authService{
 		secret: []byte(secret),
 		ttl:    ttl,
 	}
 }
 
-func (s *service) GenerateToken(userID string) (string, error) {
+func (s *authService) GenerateToken(userID string) (string, error) {
 	now := time.Now()
 	claims := &Claims{
 		UserID: userID,
@@ -50,7 +50,7 @@ func (s *service) GenerateToken(userID string) (string, error) {
 	return token.SignedString(s.secret)
 }
 
-func (s *service) ValidateToken(tokenStr string) (*Claims, error) {
+func (s *authService) ValidateToken(tokenStr string) (*Claims, error) {
 	claims := &Claims{}
 	parser := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 

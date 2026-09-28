@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/NirajDonga/pingpong/backend/api/internal/auth"
 	"github.com/gin-gonic/gin"
 )
 
@@ -60,7 +59,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 func (h *Handler) Logout(c *gin.Context) {
 	h.setCookieSameSite(c)
-	c.SetCookie(auth.SessionCookieName, "", -1, "/", "", h.cookieSecure, true)
+	c.SetCookie(SessionCookieName, "", -1, "/", "", h.cookieSecure, true)
 	c.Status(http.StatusNoContent)
 }
 
@@ -77,7 +76,7 @@ func (h *Handler) Me(c *gin.Context) {
 func (h *Handler) setSessionCookie(c *gin.Context, token string) {
 	h.setCookieSameSite(c)
 	c.SetCookie(
-		auth.SessionCookieName,
+		SessionCookieName,
 		token,
 		int((24 * time.Hour).Seconds()),
 		"/",

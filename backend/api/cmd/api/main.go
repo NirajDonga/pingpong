@@ -6,11 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/NirajDonga/pingpong/backend/api/internal/auth"
 	"github.com/NirajDonga/pingpong/backend/api/internal/config"
 	"github.com/NirajDonga/pingpong/backend/api/internal/database"
 	"github.com/NirajDonga/pingpong/backend/api/pkg/incident"
-	"github.com/NirajDonga/pingpong/backend/api/internal/middleware"
 	"github.com/NirajDonga/pingpong/backend/api/pkg/monitor"
 	"github.com/NirajDonga/pingpong/backend/api/internal/nats"
 	"github.com/NirajDonga/pingpong/backend/api/pkg/result"
@@ -40,7 +38,7 @@ func main() {
 	defer natsClient.Close()
 	log.Println("connected to nats")
 
-	authSvc := auth.NewService(cfg.JWTSecret, 24*time.Hour)
+	authSvc := user.NewAuthService(cfg.JWTSecret, 24*time.Hour)
 	userRepo := user.NewRepository(db)
 	userSvc := user.NewService(userRepo, authSvc)
 	userHandler := user.NewHandler(userSvc, cfg.CookieSecure)
@@ -63,7 +61,7 @@ func main() {
 	}
 
 	router := gin.Default()
-	router.Use(middleware.CORS(cfg.WebOrigin))
+	router.Use(CORS(cfg.WebOrigin))
 
 	router.GET("/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "api healthy")
@@ -72,7 +70,7 @@ func main() {
 	api := router.Group("/api")
 
 	protected := api.Group("")
-	protected.Use(middleware.Auth(authSvc))
+	protected.Use(user.Auth(authSvc))
 
 	user.RegisterRoutes(api, protected, userHandler)
 	monitor.RegisterRoutes(protected, monitorHandler)
