@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -51,7 +52,13 @@ func main() {
 	incidentHandler := incident.NewHandler(incidentRepo)
 	wsManager := ws.NewManager()
 
-	_, err = natsClient.SubscribeCheckResults(func(checkResult result.CheckResult) {
+	_, err = natsClient.Subscribe("check.results", func(data []byte) {
+		var checkResult result.CheckResult
+		if err := json.Unmarshal(data, &checkResult); err != nil {
+			log.Printf("failed to decode check result: %v", err)
+			return
+		}
+		
 		go func() {
 			wsManager.Broadcast(checkResult.MonitorID, checkResult)
 		}()

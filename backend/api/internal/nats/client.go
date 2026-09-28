@@ -1,15 +1,7 @@
 package nats
 
 import (
-	"encoding/json"
-	"log"
-
-	"github.com/NirajDonga/pingpong/backend/api/pkg/result"
 	natsgo "github.com/nats-io/nats.go"
-)
-
-const (
-	CheckResultsSubject = "check.results"
 )
 
 type Client struct {
@@ -29,14 +21,8 @@ func (c *Client) Close() {
 	c.conn.Close()
 }
 
-func (c *Client) SubscribeCheckResults(handler func(result.CheckResult)) (*natsgo.Subscription, error) {
-	return c.conn.Subscribe(CheckResultsSubject, func(msg *natsgo.Msg) {
-		var checkResult result.CheckResult
-		if err := json.Unmarshal(msg.Data, &checkResult); err != nil {
-			log.Printf("failed to decode check result: %v", err)
-			return
-		}
-
-		handler(checkResult)
+func (c *Client) Subscribe(subject string, handler func(data []byte)) (*natsgo.Subscription, error) {
+	return c.conn.Subscribe(subject, func(msg *natsgo.Msg) {
+		handler(msg.Data)
 	})
 }
