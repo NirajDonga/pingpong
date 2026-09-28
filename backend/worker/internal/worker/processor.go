@@ -10,7 +10,7 @@ import (
 )
 
 type ResultPublisher interface {
-	PublishCheckResult(result CheckResult) error
+	PublishCheckResult(ctx context.Context, result CheckResult) error
 }
 
 type Processor struct {
@@ -27,10 +27,10 @@ func NewProcessor(checker *checker.Checker, publisher ResultPublisher, workerNam
 	}
 }
 
-func (p *Processor) Process(ctx context.Context, job CheckJob) {
+func (p *Processor) Process(ctx context.Context, job CheckJob) error {
 	if err := validateJob(job); err != nil {
 		log.Printf("invalid check job: %v", err)
-		return
+		return err
 	}
 
 	checkResult := p.checker.Check(ctx, checker.Request{
@@ -52,12 +52,13 @@ func (p *Processor) Process(ctx context.Context, job CheckJob) {
 		WorkerName:     p.workerName,
 	}
 
-	if err := p.publisher.PublishCheckResult(result); err != nil {
+	if err := p.publisher.PublishCheckResult(ctx, result); err != nil {
 		log.Printf("failed to publish check result for monitor %s: %v", job.MonitorID, err)
-		return
+		return err
 	}
 
 	log.Printf("published check result for monitor %s success=%t status=%d", job.MonitorID, result.Success, result.StatusCode)
+	return nil
 }
 
 func validateJob(job CheckJob) error {

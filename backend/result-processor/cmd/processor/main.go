@@ -37,29 +37,30 @@ func main() {
 	pgRepo := processor.NewPostgresRepository(db)
 
 
-	sub, err := natsClient.SubscribeCheckResults(func(checkResult processor.CheckResult) {
-		if err := tbRepo.Insert(context.Background(), checkResult); err != nil {
+	cons, err := natsClient.SubscribeCheckResults(context.Background(), func(ctx context.Context, checkResult processor.CheckResult) error {
+		if err := tbRepo.Insert(ctx, checkResult); err != nil {
 			log.Printf("failed to insert check result to tinybird for monitor %s: %v", checkResult.MonitorID, err)
-			return
+			return err
 		}
 
 		monitorID, err := uuid.Parse(checkResult.MonitorID)
 		if err != nil {
 			log.Printf("invalid monitorId %s: %v", checkResult.MonitorID, err)
-			return
+			return nil
 		}
 
-		if err := pgRepo.ApplyCheckResult(context.Background(), monitorID, checkResult.Success); err != nil {
+		if err := pgRepo.ApplyCheckResult(ctx, monitorID, checkResult.Success); err != nil {
 			log.Printf("failed to apply check result to postgres for monitor %s: %v", monitorID, err)
-			return
+			return err
 		}
 
 		log.Printf("processed check result for monitor %s success=%t status=%d", checkResult.MonitorID, checkResult.Success, checkResult.StatusCode)
+		return nil
 	})
 	if err != nil {
 		log.Fatalf("check result subscription: %v", err)
 	}
-	defer sub.Unsubscribe()
+	defer cons.Stop()
 
 	log.Println("result-processor is running. Press Ctrl+C to stop")
 	

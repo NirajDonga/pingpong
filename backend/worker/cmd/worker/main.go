@@ -21,12 +21,13 @@ func main() {
 
 	processor := worker.NewProcessor(checker.New(), natsClient, cfg.WorkerName)
 
-	_, err = natsClient.SubscribeCheckJobs(func(job worker.CheckJob) {
-		go processor.Process(context.Background(), job)
+	cons, err := natsClient.SubscribeCheckJobs(context.Background(), func(ctx context.Context, job worker.CheckJob) error {
+		return processor.Process(ctx, job)
 	})
 	if err != nil {
 		log.Fatalf("worker failed to subscribe to check jobs: %v", err)
 	}
+	defer cons.Stop()
 
 	log.Println("worker service started")
 	select {}

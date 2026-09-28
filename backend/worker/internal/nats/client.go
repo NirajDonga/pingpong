@@ -1,11 +1,13 @@
 package nats
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 
 	"github.com/NirajDonga/pingpong/backend/worker/internal/worker"
 	natsgo "github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 )
 
 const (
@@ -16,6 +18,7 @@ const (
 
 type Client struct {
 	conn *natsgo.Conn
+	js   jetstream.JetStream
 }
 
 func NewClient(url string) (*Client, error) {
@@ -24,30 +27,62 @@ func NewClient(url string) (*Client, error) {
 		return nil, err
 	}
 
-	return &Client{conn: conn}, nil
+	js, err := jetstream.New(conn)
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+
+	_, err = js.CreateStream(context.Background(), jetstream.StreamConfig{
+		Name:     "RESULTS",
+		Subjects: []string{CheckResultsSubject},
+	})
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+
+	return &Client{conn: conn, js: js}, nil
 }
 
 func (c *Client) Close() {
 	c.conn.Close()
 }
 
-func (c *Client) SubscribeCheckJobs(handler func(worker.CheckJob)) (*natsgo.Subscription, error) {
-	return c.conn.Subscribe(CheckJobsSubject, func(msg *natsgo.Msg) {
+func (c *Client) SubscribeCheckJobs(ctx context.Context, handler func(context.Context, worker.CheckJob) error) (jetstream.ConsumeContext, error) {
+	cons, err := c.js.CreateOrUpdateConsumer(ctx, "JOBS", jetstream.ConsumerConfig{
+		Durable:       WorkersQueue,
+		DeliverPolicy: jetstream.DeliverAllPolicy,
+		AckPolicy:     jetstream.AckExplicitPolicy,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return cons.Consume(func(msg jetstream.Msg) {
 		var job worker.CheckJob
-		if err := json.Unmarshal(msg.Data, &job); err != nil {
+		if err := json.Unmarshal(msg.Data(), &job); err != nil {
 			log.Printf("failed to decode check job: %v", err)
+			msg.Term()
 			return
 		}
 
-		handler(job)
+		if err := handler(ctx, job); err != nil {
+			log.Printf("failed to process job: %v", err)
+			msg.Nak()
+			return
+		}
+
+		msg.Ack()
 	})
 }
 
-func (c *Client) PublishCheckResult(result worker.CheckResult) error {
+func (c *Client) PublishCheckResult(ctx context.Context, result worker.CheckResult) error {
 	data, err := json.Marshal(result)
 	if err != nil {
 		return err
 	}
 
-	return c.conn.Publish(CheckResultsSubject, data)
+	_, err = c.js.Publish(ctx, CheckResultsSubject, data)
+	return err
 }

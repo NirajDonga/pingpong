@@ -27,6 +27,7 @@ services:
   nats:
     image: nats:2.11-alpine
     container_name: pingpong-nats
+    command: ["-js"]
     ports:
       - "4222:4222"
       - "8222:8222"

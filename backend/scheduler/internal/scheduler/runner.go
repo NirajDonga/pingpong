@@ -7,7 +7,7 @@ import (
 )
 
 type Publisher interface {
-	PublishCheckJob(job CheckJob) error
+	PublishCheckJob(ctx context.Context, job CheckJob) error
 }
 
 type Runner struct {
@@ -71,7 +71,7 @@ func (r *Runner) dispatchDue(ctx context.Context) {
 			ExpectedStatus: monitor.ExpectedStatus,
 		}
 
-		if err := r.publisher.PublishCheckJob(job); err != nil {
+		if err := r.publisher.PublishCheckJob(ctx, job); err != nil {
 			log.Printf("failed to publish check job for monitor %s: %v", monitor.ID, err)
 			continue
 		}
